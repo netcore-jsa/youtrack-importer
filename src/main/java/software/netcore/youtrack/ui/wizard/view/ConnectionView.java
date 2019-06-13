@@ -1,4 +1,4 @@
-package software.netcore.youtrack.ui;
+package software.netcore.youtrack.ui.wizard.view;
 
 import com.vaadin.flow.component.html.Label;
 import com.vaadin.flow.router.PageTitle;
@@ -10,8 +10,8 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 @PageTitle("YouTrack importer")
-@Route(value = ConnectionView.NAVIGATION, layout = WizardView.class)
-public class ConnectionView extends WizardStepView {
+@Route(value = ConnectionView.NAVIGATION, layout = WizardFlowView.class)
+public class ConnectionView extends AbstractWizardView {
 
     public static final String NAVIGATION = "youtrack_connection";
 
@@ -20,8 +20,23 @@ public class ConnectionView extends WizardStepView {
     }
 
     @Override
-    String getNavigation() {
+    public String getNavigation() {
         return NAVIGATION;
+    }
+
+    @Override
+    public boolean isValid() {
+        return false;
+    }
+
+    @Override
+    public String getNextWizardStepNavigation() {
+        return null;
+    }
+
+    @Override
+    public String getPreviousWizardStepNavigation() {
+        return null;
     }
 
     private void buildView() {

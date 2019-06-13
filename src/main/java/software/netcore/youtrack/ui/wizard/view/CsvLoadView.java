@@ -1,4 +1,4 @@
-package software.netcore.youtrack.ui;
+package software.netcore.youtrack.ui.wizard.view;
 
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.upload.Upload;
@@ -9,7 +9,6 @@ import lombok.extern.slf4j.Slf4j;
 import software.netcore.youtrack.buisness.service.csv.CsvReader;
 import software.netcore.youtrack.buisness.service.csv.pojo.CsvReadResult;
 import software.netcore.youtrack.ui.notification.ErrorNotification;
-import software.netcore.youtrack.ui.wizard.ImportWizard;
 
 import java.io.IOException;
 
@@ -18,22 +17,20 @@ import java.io.IOException;
  */
 @Slf4j
 @PageTitle("YouTrack importer")
-@Route(value = CsvLoadView.NAVIGATION, layout = WizardView.class)
-public class CsvLoadView extends WizardStepView {
+@Route(value = CsvLoadView.NAVIGATION, layout = WizardFlowView.class)
+public class CsvLoadView extends AbstractWizardView {
 
     public static final String NAVIGATION = "csv_load";
 
-    private final ImportWizard importWizard;
     private final CsvReader csvReader;
 
-    public CsvLoadView(ImportWizard importWizard, CsvReader csvReader) {
-        this.importWizard = importWizard;
+    public CsvLoadView(CsvReader csvReader) {
         this.csvReader = csvReader;
         buildView();
     }
 
     private void buildView() {
-        add(new H3("Load CSV file"));
+        add(new H3(get));
         MemoryBuffer memoryBuffer = new MemoryBuffer();
         Upload upload = new Upload(memoryBuffer);
         upload.setAcceptedFileTypes(".csv");
@@ -41,6 +38,7 @@ public class CsvLoadView extends WizardStepView {
         upload.addSucceededListener(event -> {
             try {
                 CsvReadResult readResult = csvReader.read(memoryBuffer.getFileName(), memoryBuffer.getInputStream());
+                getStorage().setCsvReadResult(readResult);
             } catch (IOException e) {
                 ErrorNotification.show("Error",
                         "Ooops, failed to read CSV file, try again please");
@@ -50,8 +48,23 @@ public class CsvLoadView extends WizardStepView {
     }
 
     @Override
-    String getNavigation() {
+    public String getNavigation() {
         return NAVIGATION;
+    }
+
+    @Override
+    public boolean isValid() {
+        return false;
+    }
+
+    @Override
+    public String getNextWizardStepNavigation() {
+        return null;
+    }
+
+    @Override
+    public String getPreviousWizardStepNavigation() {
+        return null;
     }
 
 }

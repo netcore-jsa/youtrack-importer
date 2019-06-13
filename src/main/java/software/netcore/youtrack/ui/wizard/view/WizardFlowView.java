@@ -1,4 +1,4 @@
-package software.netcore.youtrack.ui;
+package software.netcore.youtrack.ui.wizard.view;
 
 import com.vaadin.flow.component.HasElement;
 import com.vaadin.flow.component.UI;
@@ -11,24 +11,27 @@ import com.vaadin.flow.component.page.Viewport;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.router.RouterLayout;
 import lombok.extern.slf4j.Slf4j;
-import software.netcore.youtrack.ui.wizard.ImportWizard;
+import software.netcore.youtrack.ui.wizard.conf.WizardFlow;
+import software.netcore.youtrack.ui.wizard.conf.WizardStorage;
 
 /**
  * @since v. 1.0.0
  */
 @Slf4j
-@Route(value = WizardView.NAVIGATION)
+@Route(value = WizardFlowView.NAVIGATION)
 @BodySize(height = "100vh", width = "100vw")
 @Viewport("width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes")
-public final class WizardView extends VerticalLayout implements RouterLayout {
+public final class WizardFlowView extends VerticalLayout implements RouterLayout {
 
     static final String NAVIGATION = "";
 
     private final Div right = new Div();
-    private final ImportWizard importWizard;
+    private final WizardStorage storage;
+    private final WizardFlow wizardFlow;
 
-    public WizardView(ImportWizard importWizard) {
-        this.importWizard = importWizard;
+    public WizardFlowView(WizardStorage storage, WizardFlow wizardFlow) {
+        this.storage = storage;
+        this.wizardFlow = wizardFlow;
         buildView();
     }
 
@@ -36,10 +39,15 @@ public final class WizardView extends VerticalLayout implements RouterLayout {
         HorizontalLayout layout = new HorizontalLayout();
         VerticalLayout left = new VerticalLayout();
 
-        left.add(new Label("Step 1"));
-        left.add(new Label("Step 2"));
-        left.add(new Label("Step 3"));
-        left.add(new Label("Step 4"));
+        int i = 1;
+        for (WizardFlow.Step step : wizardFlow.getSteps()) {
+            left.add(new Label(i + ".) " + step.getTitle()));
+            i++;
+        }
+
+        wizardFlow.getSteps().forEach(step -> {
+
+        });
 
         layout.add(left, right);
         add(layout);
