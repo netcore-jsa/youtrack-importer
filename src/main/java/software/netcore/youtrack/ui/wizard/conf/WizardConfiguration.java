@@ -17,24 +17,25 @@ public class WizardConfiguration {
     @Bean
     @UIScope
     public WizardFlow wizardFlow() {
-        return WizardFlow.builder()
-                .step(WizardFlow.Step.builder()
+        //@formatter:off
+        return new WizardFlow.WizardFlowBuilder()
+                    .step()
                         .title("Load CSV file")
                         .navigation(CsvLoadView.NAVIGATION)
-                        .build())
-                .step(WizardFlow.Step.builder()
+                .and()
+                    .step()
                         .title("Set up YouTrack connection info")
                         .navigation(ConnectionView.NAVIGATION)
-                        .build())
-                .step(WizardFlow.Step.builder()
+                .and()
+                    .step()
                         .title("Map custom fields")
                         .navigation(CustomFieldsMappingView.NAVIGATION)
-                        .build())
-                .step(WizardFlow.Step.builder()
+                .and()
+                    .step()
                         .title("Map users")
                         .navigation(UsersMappingView.NAVIGATION)
-                        .build())
                 .build();
+        //@formatter:on
     }
 
     @Bean

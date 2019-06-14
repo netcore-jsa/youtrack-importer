@@ -1,4 +1,4 @@
-package software.netcore.youtrack.buisness.service.youtrack.pojo;
+package software.netcore.youtrack.buisness.service.youtrack.entity;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

@@ -3,9 +3,10 @@ package software.netcore.youtrack.ui.wizard.conf;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
-import lombok.Singular;
+import software.netcore.youtrack.ui.wizard.view.FlowStepView;
 
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @since v. 1.0.0
@@ -13,11 +14,23 @@ import java.util.List;
 @Getter
 public class WizardFlow {
 
-    @Singular
-    private List<Step> steps;
+    @Getter(AccessLevel.PRIVATE)
+    private final Map<String, Step> stepsMapping = new LinkedHashMap<>();
+
+    @Setter
+    @Getter
+    private FlowStepView flowStep;
 
     public Step getStep(String navigation) {
-        return null;
+        return stepsMapping.get(navigation);
+    }
+
+    public Collection<Step> getSteps() {
+        return Collections.unmodifiableCollection(stepsMapping.values());
+    }
+
+    public Step getFirstStep() {
+        return stepsMapping.values().iterator().next();
     }
 
     @Getter
@@ -31,14 +44,48 @@ public class WizardFlow {
 
     }
 
-    public static class WizrdFlowBuilder {
+    @SuppressWarnings("WeakerAccess")
+    public static class WizardFlowBuilder {
+
+        private final List<StepBuilder> stepBuilders = new ArrayList<>();
+
+        public WizardFlowBuilder() {
+        }
+
+        public StepBuilder step() {
+            StepBuilder stepBuilder = new StepBuilder(this);
+            stepBuilders.add(stepBuilder);
+            return stepBuilder;
+        }
+
+        public WizardFlow build() {
+            List<Step> steps = stepBuilders.stream().map(StepBuilder::buildStep).collect(Collectors.toList());
+            for (int i = 0; i < steps.size() - 1; i++) {
+                if (i > 0) {
+                    steps.get(i).setPreviousStepNavigation(steps.get(i - 1).getNavigation());
+                }
+                if (i < steps.size()) {
+                    steps.get(i).setNextStepNavigation(steps.get(i + 1).getNavigation());
+                }
+            }
+            WizardFlow wizardFlow = new WizardFlow();
+            steps.forEach(step -> wizardFlow.getStepsMapping().put(step.getNavigation(), step));
+            return wizardFlow;
+        }
 
     }
 
+    @SuppressWarnings("WeakerAccess")
     public static class StepBuilder {
 
         private String title;
         private String navigation;
+
+        private final WizardFlowBuilder wizardFlowBuilder;
+
+        private StepBuilder(WizardFlowBuilder wizardFlowBuilder) {
+            this.wizardFlowBuilder = wizardFlowBuilder;
+        }
 
         public StepBuilder title(String title) {
             this.title = title;
@@ -50,12 +97,21 @@ public class WizardFlow {
             return this;
         }
 
-        private Step build() {
+        public WizardFlow build() {
+            return wizardFlowBuilder.build();
+        }
+
+        public WizardFlowBuilder and() {
+            return this.wizardFlowBuilder;
+        }
+
+        private Step buildStep() {
             Step step = new Step();
             step.setTitle(title);
             step.setNavigation(navigation);
             return step;
         }
+
 
     }
 
