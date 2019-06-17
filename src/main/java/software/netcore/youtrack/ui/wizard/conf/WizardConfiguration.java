@@ -3,10 +3,7 @@ package software.netcore.youtrack.ui.wizard.conf;
 import com.vaadin.flow.spring.annotation.UIScope;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import software.netcore.youtrack.ui.wizard.view.ConnectionView;
-import software.netcore.youtrack.ui.wizard.view.CsvLoadView;
-import software.netcore.youtrack.ui.wizard.view.CustomFieldsMappingView;
-import software.netcore.youtrack.ui.wizard.view.UsersMappingView;
+import software.netcore.youtrack.ui.wizard.view.*;
 
 /**
  * @since v. 1.0.0
@@ -34,6 +31,10 @@ public class WizardConfiguration {
                     .step()
                         .title("Map users")
                         .navigation(UsersMappingView.NAVIGATION)
+                .and()
+                    .step()
+                        .title("Map enums")
+                        .navigation(EnumsMappingView.NAVIGATION)
                 .build();
         //@formatter:on
     }

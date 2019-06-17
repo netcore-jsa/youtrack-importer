@@ -11,10 +11,7 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.page.BodySize;
 import com.vaadin.flow.component.page.Viewport;
-import com.vaadin.flow.router.BeforeEnterEvent;
-import com.vaadin.flow.router.BeforeEnterObserver;
-import com.vaadin.flow.router.Route;
-import com.vaadin.flow.router.RouterLayout;
+import com.vaadin.flow.router.*;
 import lombok.extern.slf4j.Slf4j;
 import software.netcore.youtrack.ui.wizard.conf.WizardFlow;
 import software.netcore.youtrack.ui.wizard.conf.WizardStorage;
@@ -28,13 +25,17 @@ import java.util.Objects;
 @Route(value = WizardFlowView.NAVIGATION)
 @BodySize(height = "100vh", width = "100vw")
 @Viewport("width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes")
-public final class WizardFlowView extends VerticalLayout implements RouterLayout, BeforeEnterObserver {
+public final class WizardFlowView extends VerticalLayout implements RouterLayout, BeforeEnterObserver,
+        AfterNavigationObserver {
 
     static final String NAVIGATION = "";
 
-    private final Div contentContainer = new Div();
     private final WizardStorage storage;
     private final WizardFlow wizardFlow;
+
+    private final Div contentContainer = new Div();
+    private Button next;
+    private Button previous;
 
     public WizardFlowView(WizardStorage storage, WizardFlow wizardFlow) {
         this.storage = storage;
@@ -55,8 +56,8 @@ public final class WizardFlowView extends VerticalLayout implements RouterLayout
             i++;
         }
 
-        Button next = new Button("Next", event -> navigateToNext());
-        Button previous = new Button("Previous", event -> navigateToPrevious());
+        next = new Button("Next", event -> navigateToNext());
+        previous = new Button("Previous", event -> navigateToPrevious());
         HorizontalLayout navigationLayout = new HorizontalLayout(previous, next);
         VerticalLayout right = new VerticalLayout(contentContainer);
         right.setWidth(null);
@@ -76,18 +77,14 @@ public final class WizardFlowView extends VerticalLayout implements RouterLayout
     private void navigateToNext() {
         FlowStepView flowStep = wizardFlow.getFlowStep();
         if (Objects.nonNull(flowStep) && flowStep.isValid()) {
-            if (flowStep.hasNextStep()) {
-                UI.getCurrent().navigate(flowStep.getNextStepNavigation());
-            }
+            UI.getCurrent().navigate(flowStep.getNextStepNavigation());
         }
     }
 
     private void navigateToPrevious() {
         FlowStepView flowStep = wizardFlow.getFlowStep();
         if (Objects.nonNull(flowStep)) {
-            if (flowStep.hasPreviousStep()) {
-                UI.getCurrent().navigate(flowStep.getPreviousStepNavigation());
-            }
+            UI.getCurrent().navigate(flowStep.getPreviousStepNavigation());
         }
     }
 
@@ -97,6 +94,12 @@ public final class WizardFlowView extends VerticalLayout implements RouterLayout
             String navigation = wizardFlow.getFirstStep().getNavigation();
             event.forwardTo(navigation);
         }
+    }
+
+    @Override
+    public void afterNavigation(AfterNavigationEvent event) {
+        next.setEnabled(wizardFlow.getFlowStep().hasNextStep());
+        previous.setEnabled(wizardFlow.getFlowStep().hasPreviousStep());
     }
 
 }

@@ -7,6 +7,8 @@ public interface FlowStepView {
 
     boolean isValid();
 
+    boolean hasStoredConfiguration();
+
     String getNavigation();
 
     boolean hasPreviousStep();

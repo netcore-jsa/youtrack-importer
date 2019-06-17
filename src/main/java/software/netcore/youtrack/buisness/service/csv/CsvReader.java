@@ -1,10 +1,13 @@
 package software.netcore.youtrack.buisness.service.csv;
 
-import org.apache.commons.io.IOUtils;
+import com.opencsv.CSVReader;
+import com.opencsv.CSVReaderBuilder;
 import software.netcore.youtrack.buisness.service.csv.pojo.CsvReadResult;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -14,15 +17,18 @@ import java.util.List;
  */
 public class CsvReader {
 
-    private static final String SPLIT_CHARACTER = ";";
-
     public CsvReadResult read(String fileName, InputStream content) throws IOException {
-        List<String> lines = IOUtils.readLines(content, "UTF-8");
-        List<String> columns = Arrays.asList(lines.get(0).split(SPLIT_CHARACTER));
-        List<List<String>> rows = new ArrayList<>(lines.size() - 1);
-        for (int i = 1; i < lines.size(); i++) {
-            rows.add(Arrays.asList(lines.get(i).split(SPLIT_CHARACTER)));
+        InputStreamReader reader = new InputStreamReader(content, StandardCharsets.UTF_8);
+        CSVReader csvReader = new CSVReaderBuilder(reader).build();
+        List<String[]> newLines = csvReader.readAll();
+
+        List<String> columns = Arrays.asList(newLines.get(0));
+        List<List<String>> rows = new ArrayList<>(newLines.size() - 1);
+
+        for (int i = 1; i < newLines.size(); i++) {
+            rows.add(Arrays.asList(newLines.get(i)));
         }
+
         return CsvReadResult.builder()
                 .fileName(fileName)
                 .columns(columns)

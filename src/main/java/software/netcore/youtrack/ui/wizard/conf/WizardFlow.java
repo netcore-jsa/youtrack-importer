@@ -60,11 +60,11 @@ public class WizardFlow {
 
         public WizardFlow build() {
             List<Step> steps = stepBuilders.stream().map(StepBuilder::buildStep).collect(Collectors.toList());
-            for (int i = 0; i < steps.size() - 1; i++) {
+            for (int i = 0; i < steps.size(); i++) {
                 if (i > 0) {
                     steps.get(i).setPreviousStepNavigation(steps.get(i - 1).getNavigation());
                 }
-                if (i < steps.size()) {
+                if (i < steps.size() - 1) {
                     steps.get(i).setNextStepNavigation(steps.get(i + 1).getNavigation());
                 }
             }

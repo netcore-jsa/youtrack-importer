@@ -1,7 +1,6 @@
 package software.netcore.youtrack.ui.wizard.view;
 
 import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.textfield.TextArea;
@@ -21,6 +20,8 @@ import software.netcore.youtrack.buisness.service.youtrack.entity.ConnectionInfo
 import software.netcore.youtrack.ui.wizard.conf.WizardFlow;
 import software.netcore.youtrack.ui.wizard.conf.WizardStorage;
 
+import java.util.Objects;
+
 /**
  * @since v. 1.0.0
  */
@@ -30,18 +31,22 @@ import software.netcore.youtrack.ui.wizard.conf.WizardStorage;
 public class ConnectionView extends AbstractFlowStepView {
 
     public static final String NAVIGATION = "youtrack_connection";
-    private final YouTrackService youTrackService;
+    private final YouTrackService service;
 
     private Binder<ConnectionInfo> binder;
-    private Div validationLayout;
     private TextField url;
     private TextArea token;
     private TextField project;
 
-    public ConnectionView(WizardStorage storage, WizardFlow wizardFlow, YouTrackService youTrackService) {
+    public ConnectionView(WizardStorage storage, WizardFlow wizardFlow, YouTrackService service) {
         super(storage, wizardFlow);
-        this.youTrackService = youTrackService;
+        this.service = service;
         buildView();
+    }
+
+    @Override
+    public boolean hasStoredConfiguration() {
+        return Objects.nonNull(getStorage().getConnectionInfo());
     }
 
     @Override
@@ -57,7 +62,7 @@ public class ConnectionView extends AbstractFlowStepView {
             binder.writeBeanIfValid(connectionInfo);
             boolean connectionInfoValid = false;
             try {
-                connectionInfoValid = youTrackService.checkProjectAvailability(connectionInfo);
+                connectionInfoValid = service.checkProjectAvailability(connectionInfo);
                 if (connectionInfoValid) {
                     Notification.show("YouTrack connection info is valid",
                             3000, Notification.Position.TOP_END);
@@ -108,13 +113,21 @@ public class ConnectionView extends AbstractFlowStepView {
                 .withValidator(new StringLengthValidator("Project name is required",
                         1, Integer.MAX_VALUE))
                 .bind(ConnectionInfo::getProjectName, ConnectionInfo::setProjectName);
-        ConnectionInfo connectionInfo = getStorage().getConnectionInfo();
-        binder.readBean(connectionInfo == null ? new ConnectionInfo() : connectionInfo);
+//        ConnectionInfo connectionInfo = getStorage().getConnectionInfo();
+//        binder.readBean(connectionInfo == null ? new ConnectionInfo() : connectionInfo);
+
+        ConnectionInfo connectionInfo = new ConnectionInfo();
+        connectionInfo.setApiEndpoint("https://tracker.netcore.systems/api");
+        connectionInfo.setServiceToken("perm:amFuLnBpY2hhbmlj.eW91dHJhY2stdG9rZW4=.ujjqwDuo9JuDoKz45jMoj0MSL1bhIO");
+        connectionInfo.setProjectName("Unimus");
+        binder.readBean(connectionInfo);
 
         add(url);
         add(token);
         add(project);
         add(new Button("Validate", event -> isValid()));
+
+
     }
 
 }

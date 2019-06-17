@@ -7,7 +7,9 @@ import okhttp3.Headers;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
+import software.netcore.youtrack.buisness.client.entity.CustomField;
 import software.netcore.youtrack.buisness.client.entity.Project;
+import software.netcore.youtrack.buisness.client.entity.User;
 import software.netcore.youtrack.buisness.client.exception.HostUnreachableException;
 import software.netcore.youtrack.buisness.client.exception.InvalidHostnameException;
 import software.netcore.youtrack.buisness.client.exception.UnauthorizedException;
@@ -26,6 +28,9 @@ public class YouTrackRestClient {
     private final static String MEDIA_TYPE_JSON = "application/json";
 
     private final static String PROJECTS_PATH = "/admin/projects?fields=id,name,shortName,description";
+    private final static String USERS_PATH = "/admin/users?fields=login,fullName,email";
+    private final static String CUSTOM_FIELDS_PATH = "/admin/projects/%s/customFields?fields=id,name," +
+            "canBeEmpty,emptyFieldText,field(id,name)";
 
     private final OkHttpClient client;
     private final ObjectMapper objectMapper;
@@ -52,7 +57,54 @@ public class YouTrackRestClient {
             log.warn("Failed to get projects. Invalid YouTrack Rest API endpoint");
             throw new InvalidHostnameException("Invalid YouTrack Rest API endpoint");
         } catch (IOException e) {
-            log.warn("Failed to get projects. YouTrack Rest API endpoint is unreachable. Reason = '{}'", e.getMessage());
+            log.warn("Failed to get projects. YouTrack Rest API endpoint is unreachable. " +
+                    "Reason = '{}'", e.getMessage());
+            throw new HostUnreachableException("YouTrack Rest API endpoint is unreachable");
+        }
+    }
+
+    public Collection<User> getUsers(String apiEndpoint, String authToken) throws UnauthorizedException,
+            InvalidHostnameException, HostUnreachableException {
+        try {
+            Request request = new Request.Builder()
+                    .get()
+                    .url(apiEndpoint + USERS_PATH)
+                    .headers(buildHeaders(authToken))
+                    .build();
+            Response response = client.newCall(request).execute();
+            validateResponse(response);
+            String stringResponse = response.body().string();
+            return objectMapper.<List<User>>readValue(stringResponse, new TypeReference<List<User>>() {
+            });
+        } catch (UnknownHostException e) {
+            log.warn("Failed to get users. Invalid YouTrack Rest API endpoint");
+            throw new InvalidHostnameException("Invalid YouTrack Rest API endpoint");
+        } catch (IOException e) {
+            log.warn("Failed to get users. YouTrack Rest API endpoint is unreachable. " +
+                    "Reason = '{}'", e.getMessage());
+            throw new HostUnreachableException("YouTrack Rest API endpoint is unreachable");
+        }
+    }
+
+    public Collection<CustomField> getCustomFields(String apiEndpoint, String authToken, String projectId)
+            throws UnauthorizedException, InvalidHostnameException, HostUnreachableException {
+        try {
+            Request request = new Request.Builder()
+                    .get()
+                    .url(apiEndpoint + String.format(CUSTOM_FIELDS_PATH, projectId))
+                    .headers(buildHeaders(authToken))
+                    .build();
+            Response response = client.newCall(request).execute();
+            validateResponse(response);
+            String stringResponse = response.body().string();
+            return objectMapper.<List<CustomField>>readValue(stringResponse, new TypeReference<List<CustomField>>() {
+            });
+        } catch (UnknownHostException e) {
+            log.warn("Failed to get project's custom fields. Invalid YouTrack Rest API endpoint");
+            throw new InvalidHostnameException("Invalid YouTrack Rest API endpoint");
+        } catch (IOException e) {
+            log.warn("Failed to get project's custom fields. YouTrack Rest API endpoint is unreachable. " +
+                    "Reason = '{}'", e.getMessage());
             throw new HostUnreachableException("YouTrack Rest API endpoint is unreachable");
         }
     }
