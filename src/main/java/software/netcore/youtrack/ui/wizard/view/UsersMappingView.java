@@ -2,14 +2,12 @@ package software.netcore.youtrack.ui.wizard.view;
 
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
-import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Hr;
 import com.vaadin.flow.component.html.Label;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
-import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import lombok.extern.slf4j.Slf4j;
@@ -19,8 +17,9 @@ import software.netcore.youtrack.buisness.client.exception.HostUnreachableExcept
 import software.netcore.youtrack.buisness.client.exception.InvalidHostnameException;
 import software.netcore.youtrack.buisness.client.exception.UnauthorizedException;
 import software.netcore.youtrack.buisness.service.youtrack.YouTrackService;
+import software.netcore.youtrack.buisness.service.youtrack.entity.UsersConfig;
 import software.netcore.youtrack.ui.wizard.conf.WizardFlow;
-import software.netcore.youtrack.ui.wizard.conf.WizardStorage;
+import software.netcore.youtrack.ui.wizard.conf.YouTrackImporterStorage;
 
 import java.util.*;
 
@@ -30,48 +29,30 @@ import java.util.*;
 @Slf4j
 @PageTitle("YouTrack importer")
 @Route(value = UsersMappingView.NAVIGATION, layout = WizardFlowView.class)
-public class UsersMappingView extends AbstractFlowStepView {
+public class UsersMappingView extends AbstractFlowStepView<YouTrackImporterStorage, UsersConfig> {
 
     public static final String NAVIGATION = "users_mapping";
 
-    @FunctionalInterface
-    private interface AdditionListener<T> {
-
-        void onAddition(T object);
-
-    }
-
-    @FunctionalInterface
-    public interface RemovalListener<T> {
-
-        void onRemoval(T object);
-
-    }
-
-    private final Map<String, UserMappingLayout> usersMapping = new HashMap<>();
-    private final Set<String> selectedCsvColumns = new HashSet<>();
+    private final Map<String, UserMappingLayout> userToMappingLayout = new HashMap<>();
     private final Div selectedCsvColumnsLayout = new Div();
     private final Div usersMappingsLayout = new Div();
     private final YouTrackService service;
+    private Collection<User> youTrackUsers;
+    private UsersConfig usersConfig;
 
-    public UsersMappingView(WizardStorage storage, WizardFlow wizardFlow, YouTrackService service) {
+    public UsersMappingView(YouTrackImporterStorage storage, WizardFlow wizardFlow, YouTrackService service) {
         super(storage, wizardFlow);
         this.service = service;
-        buildView();
     }
 
     @Override
     public boolean isValid() {
         boolean isValid = true;
-        for (UserMappingLayout value : usersMapping.values()) {
+        for (UserMappingLayout value : userToMappingLayout.values()) {
             isValid = value.isValid() && isValid;
         }
-        return false;
-    }
-
-    @Override
-    public boolean hasStoredConfiguration() {
-        return Objects.nonNull(getStorage().getUsersMapping());
+        setConfig(isValid ? usersConfig : null);
+        return isValid;
     }
 
     @Override
@@ -79,43 +60,60 @@ public class UsersMappingView extends AbstractFlowStepView {
         return NAVIGATION;
     }
 
-    private void buildView() {
+    void buildView() {
+        removeAll();
+        usersConfig = hasStoredConfig() ? getConfig() : new UsersConfig();
+
         add(new H3("Users mapping: CSV -> YouTrack"));
-
-        try {
-            Collection<User> users = service.getUsers(getStorage().getConnectionInfo());
-            System.out.println(Arrays.toString(users.toArray()));
-        } catch (InvalidHostnameException e) {
-            e.printStackTrace();
-        } catch (HostUnreachableException e) {
-            e.printStackTrace();
-        } catch (UnauthorizedException e) {
-            e.printStackTrace();
-        }
-
+        youTrackUsers = getYouTrackUsers();
         AddCsvColumnsDialog dialog = new AddCsvColumnsDialog(getStorage().getCsvReadResult().getColumns(),
-                csvUser -> {
-                    selectedCsvColumns.add(csvUser);
-                    selectedCsvColumnsLayout.add(new CsvColumnLabel(csvUser, listener -> {
-                        selectedCsvColumns.remove(csvUser);
-                        updateMappingLayouts();
-                    }));
-                    updateMappingLayouts();
-                });
+                csvUser -> addCsvColumn(csvUser, true));
         Button addColumnsBtn = new Button("Add column", VaadinIcon.PLUS.create(),
                 event -> dialog.setOpened(true));
         add(addColumnsBtn);
         add(selectedCsvColumnsLayout);
         add(new Hr());
         add(usersMappingsLayout);
+
+        // load existing mappings if exist
+        if (hasStoredConfig()) {
+            getConfig().getSelectedCsvColumns()
+                    .forEach(column -> addCsvColumn(column, false));
+            updateMappingLayouts();
+        }
+    }
+
+    private void addCsvColumn(String csvColumn, boolean updateMappingLayouts) {
+        usersConfig.getSelectedCsvColumns().add(csvColumn);
+        selectedCsvColumnsLayout.add(new CsvColumnLabel(csvColumn, listener -> {
+            usersConfig.getSelectedCsvColumns().remove(csvColumn);
+            if (updateMappingLayouts) {
+                updateMappingLayouts();
+            }
+        }));
+        if (updateMappingLayouts) {
+            updateMappingLayouts();
+        }
+    }
+
+    private Collection<User> getYouTrackUsers() {
+        try {
+            return service.getUsers(getStorage().getConnectionConfig());
+        } catch (InvalidHostnameException e) {
+            throw new IllegalStateException(e.getMessage());
+        } catch (HostUnreachableException e) {
+            throw new IllegalStateException(e.getMessage());
+        } catch (UnauthorizedException e) {
+            throw new IllegalStateException(e.getMessage());
+        }
     }
 
     private void updateMappingLayouts() {
-        Collection<String> csvUsers = extractUsersFromColumns(selectedCsvColumns);
+        Collection<String> csvUsers = extractUsersFromColumns(usersConfig.getSelectedCsvColumns());
         Collection<String> toRemove = new HashSet<>();
         Collection<String> toAdd = new HashSet<>();
 
-        for (String mappedUser : usersMapping.keySet()) {
+        for (String mappedUser : userToMappingLayout.keySet()) {
             boolean missing = true;
             for (String csvUser : csvUsers) {
                 if (Objects.equals(csvUser, mappedUser)) {
@@ -129,22 +127,22 @@ public class UsersMappingView extends AbstractFlowStepView {
         }
 
         for (String csvUser : csvUsers) {
-            if (!usersMapping.containsKey(csvUser)) {
+            if (!userToMappingLayout.containsKey(csvUser)) {
                 toAdd.add(csvUser);
             }
         }
 
         toRemove.forEach(csvUser -> {
-            if (usersMapping.containsKey(csvUser)) {
-                UserMappingLayout userMappingLayout = usersMapping.get(csvUser);
+            if (userToMappingLayout.containsKey(csvUser)) {
+                UserMappingLayout userMappingLayout = userToMappingLayout.get(csvUser);
                 userMappingLayout.getElement().removeFromParent();
-                usersMapping.remove(csvUser);
+                userToMappingLayout.remove(csvUser);
             }
         });
         toAdd.forEach(csvUser -> {
-            if (!usersMapping.containsKey(csvUser)) {
-                UserMappingLayout userMappingLayout = new UserMappingLayout(csvUser);
-                usersMapping.put(csvUser, userMappingLayout);
+            if (!userToMappingLayout.containsKey(csvUser)) {
+                UserMappingLayout userMappingLayout = new UserMappingLayout(csvUser, youTrackUsers, usersConfig);
+                userToMappingLayout.put(csvUser, userMappingLayout);
                 usersMappingsLayout.add(userMappingLayout);
             }
         });
@@ -176,60 +174,45 @@ public class UsersMappingView extends AbstractFlowStepView {
 
     private static class UserMappingLayout extends HorizontalLayout {
 
-        private final TextField valueField = new TextField();
+        private final ComboBox<User> usersBox = new ComboBox<>();
+        private final UsersConfig usersConfig;
+        private final String csvUser;
 
-        UserMappingLayout(String csvUser) {
+        UserMappingLayout(String csvUser, Collection<User> youTrackUsers, UsersConfig usersConfig) {
+            this.csvUser = csvUser;
+            this.usersConfig = usersConfig;
+
             setDefaultVerticalComponentAlignment(Alignment.CENTER);
             Label csvColumnLabel = new Label(csvUser);
             csvColumnLabel.setWidth("200px");
+
+            usersBox.setItems(youTrackUsers);
+            usersBox.setItemLabelGenerator(User::getLogin);
+            usersBox.setErrorMessage("User mapping is required");
+            usersBox.setAllowCustomValue(false);
+            usersBox.addValueChangeListener(event -> validateSelection(event.getValue()));
+
+            if (usersConfig.getMapping().containsKey(csvUser)) {
+                usersBox.setValue(usersConfig.getMapping().get(csvUser));
+            }
+
             add(csvColumnLabel);
-            add(valueField);
+            add(usersBox);
         }
 
         boolean isValid() {
-            if (valueField.getValue().isEmpty()) {
-                valueField.setErrorMessage("User mapping is required");
-                valueField.setInvalid(true);
-                return false;
-            }
-            return true;
+            return validateSelection();
         }
-    }
 
-    private static class CsvColumnLabel extends HorizontalLayout {
-
-        CsvColumnLabel(String user, RemovalListener<String> removalListener) {
-            setDefaultVerticalComponentAlignment(Alignment.CENTER);
-            add(new Label(user));
-            add(new Button(VaadinIcon.CLOSE.create(), event -> {
-                getElement().removeFromParent();
-                removalListener.onRemoval(user);
-            }));
+        private boolean validateSelection() {
+            return validateSelection(usersBox.getValue());
         }
-    }
 
-    private static class AddCsvColumnsDialog extends Dialog {
-
-        AddCsvColumnsDialog(Collection<String> csvColumns, AdditionListener<String> additionListener) {
-            ComboBox<String> columnsBox = new ComboBox<>("CSV column");
-            columnsBox.setItems(csvColumns);
-            columnsBox.setWidthFull();
-            add(columnsBox);
-
-            HorizontalLayout controlsLayout = new HorizontalLayout();
-            controlsLayout.add(new Button("Cancel", event -> setOpened(false)));
-            controlsLayout.add(new Button("Add", event -> {
-                String value = columnsBox.getValue();
-                if (StringUtils.isEmpty(value)) {
-                    columnsBox.setErrorMessage("CSV column is required");
-                    columnsBox.setInvalid(true);
-                    return;
-                }
-                additionListener.onAddition(value);
-                setOpened(false);
-            }));
-            controlsLayout.setWidthFull();
-            add(controlsLayout);
+        private boolean validateSelection(User user) {
+            boolean isNull = Objects.isNull(user);
+            usersBox.setInvalid(isNull);
+            usersConfig.getMapping().put(csvUser, isNull ? null : user);
+            return !isNull;
         }
     }
 

@@ -14,7 +14,7 @@ import software.netcore.youtrack.buisness.service.csv.CsvReader;
 import software.netcore.youtrack.buisness.service.csv.pojo.CsvReadResult;
 import software.netcore.youtrack.ui.notification.ErrorNotification;
 import software.netcore.youtrack.ui.wizard.conf.WizardFlow;
-import software.netcore.youtrack.ui.wizard.conf.WizardStorage;
+import software.netcore.youtrack.ui.wizard.conf.YouTrackImporterStorage;
 
 import java.io.IOException;
 import java.util.Objects;
@@ -25,17 +25,16 @@ import java.util.Objects;
 @Slf4j
 @PageTitle("YouTrack importer")
 @Route(value = CsvLoadView.NAVIGATION, layout = WizardFlowView.class)
-public class CsvLoadView extends AbstractFlowStepView {
+public class CsvLoadView extends AbstractFlowStepView<YouTrackImporterStorage, CsvReadResult> {
 
     public static final String NAVIGATION = "csv_load";
 
     private final CsvReader csvReader;
     private HorizontalLayout lastLoadedCsvLayout;
 
-    public CsvLoadView(CsvReader csvReader, WizardStorage storage, WizardFlow wizardFlow) {
+    public CsvLoadView(CsvReader csvReader, YouTrackImporterStorage storage, WizardFlow wizardFlow) {
         super(storage, wizardFlow);
         this.csvReader = csvReader;
-        buildView();
     }
 
     @Override
@@ -44,18 +43,15 @@ public class CsvLoadView extends AbstractFlowStepView {
     }
 
     @Override
-    public boolean hasStoredConfiguration() {
-        return Objects.nonNull(getStorage().getCsvReadResult());
-    }
-
-    @Override
     public boolean isValid() {
         //TODO validate CSV read result content as well + show validation message
-        return Objects.nonNull(getStorage().getCsvReadResult());
+        return Objects.nonNull(getConfig());
     }
 
-    private void buildView() {
+    void buildView() {
+        removeAll();
         add(new H3(getStep().getTitle()));
+
         MemoryBuffer memoryBuffer = new MemoryBuffer();
         Upload upload = new Upload(memoryBuffer);
         upload.setAcceptedFileTypes(".csv");
@@ -63,9 +59,9 @@ public class CsvLoadView extends AbstractFlowStepView {
         upload.setMaxFiles(1);
         upload.addSucceededListener(event -> {
             try {
-                invalidate();
+                invalidateConfig();
                 CsvReadResult readResult = csvReader.read(memoryBuffer.getFileName(), memoryBuffer.getInputStream());
-                getStorage().setCsvReadResult(readResult);
+                setConfig(readResult);
                 showLastLoadedCsv(readResult);
             } catch (IOException e) {
                 ErrorNotification.show("Error",
@@ -77,8 +73,8 @@ public class CsvLoadView extends AbstractFlowStepView {
         lastLoadedCsvLayout = new HorizontalLayout();
         lastLoadedCsvLayout.setDefaultVerticalComponentAlignment(Alignment.CENTER);
 
-        if (getStorage().getCsvReadResult() != null) {
-            showLastLoadedCsv(getStorage().getCsvReadResult());
+        if (hasStoredConfig()) {
+            showLastLoadedCsv(getConfig());
         }
     }
 
@@ -90,15 +86,14 @@ public class CsvLoadView extends AbstractFlowStepView {
         lastLoadedCsvLayout.add(new Label(csvReadResult.getFileName()));
         lastLoadedCsvLayout.add(new Button(VaadinIcon.CLOSE.create(), event -> {
             remove(lastLoadedCsvLayout);
-            invalidate();
+            invalidateConfig();
         }));
         add(lastLoadedCsvLayout);
     }
 
-    private void invalidate() {
-        getStorage().setCsvReadResult(null);
-        getStorage().setCustomFieldsMapping(null);
-        getStorage().setUsersMapping(null);
+    private void invalidateConfig() {
+        setConfig(null);
+        invalidateFollowingSteps();
     }
 
 }

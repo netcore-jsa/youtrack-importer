@@ -5,7 +5,8 @@ import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.BeforeLeaveEvent;
 import com.vaadin.flow.router.BeforeLeaveObserver;
-import lombok.Getter;
+import software.netcore.youtrack.ui.wizard.conf.HasStepConfig;
+import software.netcore.youtrack.ui.wizard.conf.HasWizardStorage;
 import software.netcore.youtrack.ui.wizard.conf.WizardFlow;
 import software.netcore.youtrack.ui.wizard.conf.WizardStorage;
 
@@ -14,22 +15,36 @@ import java.util.Objects;
 /**
  * @since v. 1.0.0
  */
-abstract class AbstractFlowStepView extends VerticalLayout implements FlowStepView,
-        BeforeEnterObserver, BeforeLeaveObserver {
+abstract class AbstractFlowStepView<U extends WizardStorage, T> extends VerticalLayout implements FlowStepView,
+        BeforeEnterObserver, BeforeLeaveObserver, HasWizardStorage<U>, HasStepConfig<T> {
 
-    @Getter
-    private final WizardStorage storage;
-
-    @Getter
+    private final U storage;
     private final WizardFlow wizardFlow;
 
-    AbstractFlowStepView(WizardStorage storage, WizardFlow wizardFlow) {
+    AbstractFlowStepView(U storage, WizardFlow wizardFlow) {
         this.storage = storage;
         this.wizardFlow = wizardFlow;
     }
 
-    WizardFlow.Step getStep() {
-        return wizardFlow.getStep(getNavigation());
+    abstract void buildView();
+
+    public U getStorage() {
+        return storage;
+    }
+
+    @Override
+    public T getConfig() {
+        return getStorage().getConfig(getNavigation());
+    }
+
+    @Override
+    public void setConfig(T config) {
+        getStorage().setConfig(getNavigation(), config);
+    }
+
+    @Override
+    public boolean hasStoredConfig() {
+        return Objects.nonNull(getConfig());
     }
 
     @Override
@@ -55,11 +70,29 @@ abstract class AbstractFlowStepView extends VerticalLayout implements FlowStepVi
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
         wizardFlow.setFlowStep(this);
+        if (hasStoredConfig()) {
+            buildView();
+        } else {
+            String navigation = getStorage().getFirstInvalidConfigNavigation();
+            if (Objects.equals(navigation, getNavigation())) {
+                buildView();
+            } else {
+                event.forwardTo(navigation);
+            }
+        }
     }
 
     @Override
     public void beforeLeave(BeforeLeaveEvent event) {
         wizardFlow.setFlowStep(null);
+    }
+
+    void invalidateFollowingSteps() {
+        storage.invalidateFollowingConfigs(getNavigation());
+    }
+
+    WizardFlow.Step getStep() {
+        return wizardFlow.getStep(getNavigation());
     }
 
 }

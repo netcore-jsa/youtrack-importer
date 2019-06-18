@@ -49,7 +49,14 @@ public class WizardFlow {
 
         private final List<StepBuilder> stepBuilders = new ArrayList<>();
 
+        private WizardStorage wizardStorage;
+
         public WizardFlowBuilder() {
+        }
+
+        public WizardFlowBuilder storage(WizardStorage storage) {
+            this.wizardStorage = storage;
+            return this;
         }
 
         public StepBuilder step() {
@@ -70,6 +77,7 @@ public class WizardFlow {
             }
             WizardFlow wizardFlow = new WizardFlow();
             steps.forEach(step -> wizardFlow.getStepsMapping().put(step.getNavigation(), step));
+            wizardStorage.setConfigsOrder(wizardFlow.getStepsMapping().keySet().toArray(new String[]{}));
             return wizardFlow;
         }
 
@@ -105,6 +113,7 @@ public class WizardFlow {
             return this.wizardFlowBuilder;
         }
 
+
         private Step buildStep() {
             Step step = new Step();
             step.setTitle(title);
@@ -112,8 +121,6 @@ public class WizardFlow {
             return step;
         }
 
-
     }
-
 
 }

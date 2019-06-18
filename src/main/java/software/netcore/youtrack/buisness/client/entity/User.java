@@ -16,4 +16,13 @@ public class User {
     private String fullName;
     private String email;
 
+    @Override
+    public String toString() {
+        return "User{" +
+                "login='" + login + '\'' +
+                ", fullName='" + fullName + '\'' +
+                ", email='" + email + '\'' +
+                '}';
+    }
+
 }

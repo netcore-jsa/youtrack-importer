@@ -1,29 +1,18 @@
 package software.netcore.youtrack.ui.wizard.conf;
 
-import lombok.Getter;
-import lombok.Setter;
-import software.netcore.youtrack.buisness.service.csv.pojo.CsvReadResult;
-import software.netcore.youtrack.buisness.service.youtrack.entity.*;
-
 /**
  * @since v. 1.0.0
  */
-@Getter
-public class WizardStorage {
+public interface WizardStorage {
 
-    @Setter
-    private CsvReadResult csvReadResult;
-    @Setter
-    private ConnectionInfo connectionInfo;
-    @Setter
-    private CustomFieldsMapping customFieldsMapping;
-    @Setter
-    private UsersMapping usersMapping;
-    @Setter
-    private EnumsMapping enumsMapping;
+    <T> T getConfig(String navigation);
 
-    public ImportConfig getImportConfig() {
-        return new ImportConfig(connectionInfo, customFieldsMapping, usersMapping);
-    }
+    <T> void setConfig(String navigation, T config);
+
+    void invalidateFollowingConfigs(String navigation);
+
+    String getFirstInvalidConfigNavigation();
+
+    void setConfigsOrder(String... navigations);
 
 }

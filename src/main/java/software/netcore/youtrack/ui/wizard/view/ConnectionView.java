@@ -16,11 +16,9 @@ import software.netcore.youtrack.buisness.client.exception.HostUnreachableExcept
 import software.netcore.youtrack.buisness.client.exception.InvalidHostnameException;
 import software.netcore.youtrack.buisness.client.exception.UnauthorizedException;
 import software.netcore.youtrack.buisness.service.youtrack.YouTrackService;
-import software.netcore.youtrack.buisness.service.youtrack.entity.ConnectionInfo;
+import software.netcore.youtrack.buisness.service.youtrack.entity.YouTrackConnectionConfig;
 import software.netcore.youtrack.ui.wizard.conf.WizardFlow;
-import software.netcore.youtrack.ui.wizard.conf.WizardStorage;
-
-import java.util.Objects;
+import software.netcore.youtrack.ui.wizard.conf.YouTrackImporterStorage;
 
 /**
  * @since v. 1.0.0
@@ -28,25 +26,19 @@ import java.util.Objects;
 @Slf4j
 @PageTitle("YouTrack importer")
 @Route(value = ConnectionView.NAVIGATION, layout = WizardFlowView.class)
-public class ConnectionView extends AbstractFlowStepView {
+public class ConnectionView extends AbstractFlowStepView<YouTrackImporterStorage, YouTrackConnectionConfig> {
 
     public static final String NAVIGATION = "youtrack_connection";
     private final YouTrackService service;
 
-    private Binder<ConnectionInfo> binder;
+    private Binder<YouTrackConnectionConfig> binder;
     private TextField url;
     private TextArea token;
     private TextField project;
 
-    public ConnectionView(WizardStorage storage, WizardFlow wizardFlow, YouTrackService service) {
+    public ConnectionView(YouTrackImporterStorage storage, WizardFlow wizardFlow, YouTrackService service) {
         super(storage, wizardFlow);
         this.service = service;
-        buildView();
-    }
-
-    @Override
-    public boolean hasStoredConfiguration() {
-        return Objects.nonNull(getStorage().getConnectionInfo());
     }
 
     @Override
@@ -56,13 +48,13 @@ public class ConnectionView extends AbstractFlowStepView {
 
     @Override
     public boolean isValid() {
-        BinderValidationStatus<ConnectionInfo> status = binder.validate();
+        BinderValidationStatus<YouTrackConnectionConfig> status = binder.validate();
         if (status.isOk()) {
-            ConnectionInfo connectionInfo = new ConnectionInfo();
-            binder.writeBeanIfValid(connectionInfo);
+            YouTrackConnectionConfig youTrackConnectionConfig = new YouTrackConnectionConfig();
+            binder.writeBeanIfValid(youTrackConnectionConfig);
             boolean connectionInfoValid = false;
             try {
-                connectionInfoValid = service.checkProjectAvailability(connectionInfo);
+                connectionInfoValid = service.checkProjectAvailability(youTrackConnectionConfig);
                 if (connectionInfoValid) {
                     Notification.show("YouTrack connection info is valid",
                             3000, Notification.Position.TOP_END);
@@ -80,13 +72,14 @@ public class ConnectionView extends AbstractFlowStepView {
                 url.setErrorMessage("Invalid hostname");
                 url.setInvalid(true);
             }
-            getStorage().setConnectionInfo(connectionInfoValid ? connectionInfo : null);
+            setConfig(connectionInfoValid ? youTrackConnectionConfig : null);
             return connectionInfoValid;
         }
         return false;
     }
 
-    private void buildView() {
+    void buildView() {
+        removeAll();
         setWidth("500px");
         add(new H3(getStep().getTitle()));
 
@@ -100,34 +93,26 @@ public class ConnectionView extends AbstractFlowStepView {
         project.setValueChangeMode(ValueChangeMode.EAGER);
         project.setWidthFull();
 
-        binder = new Binder<>(ConnectionInfo.class);
+        binder = new Binder<>(YouTrackConnectionConfig.class);
         binder.forField(url)
                 .withValidator(new StringLengthValidator("API endpoint is required",
                         1, Integer.MAX_VALUE))
-                .bind(ConnectionInfo::getApiEndpoint, ConnectionInfo::setApiEndpoint);
+                .bind(YouTrackConnectionConfig::getApiEndpoint, YouTrackConnectionConfig::setApiEndpoint);
         binder.forField(token)
                 .withValidator(new StringLengthValidator("Service token is required",
                         1, Integer.MAX_VALUE))
-                .bind(ConnectionInfo::getServiceToken, ConnectionInfo::setServiceToken);
+                .bind(YouTrackConnectionConfig::getServiceToken, YouTrackConnectionConfig::setServiceToken);
         binder.forField(project)
                 .withValidator(new StringLengthValidator("Project name is required",
                         1, Integer.MAX_VALUE))
-                .bind(ConnectionInfo::getProjectName, ConnectionInfo::setProjectName);
-//        ConnectionInfo connectionInfo = getStorage().getConnectionInfo();
-//        binder.readBean(connectionInfo == null ? new ConnectionInfo() : connectionInfo);
-
-        ConnectionInfo connectionInfo = new ConnectionInfo();
-        connectionInfo.setApiEndpoint("https://tracker.netcore.systems/api");
-        connectionInfo.setServiceToken("perm:amFuLnBpY2hhbmlj.eW91dHJhY2stdG9rZW4=.ujjqwDuo9JuDoKz45jMoj0MSL1bhIO");
-        connectionInfo.setProjectName("Unimus");
-        binder.readBean(connectionInfo);
+                .bind(YouTrackConnectionConfig::getProjectName, YouTrackConnectionConfig::setProjectName);
+        YouTrackConnectionConfig connectionInfo = getStorage().getConnectionConfig();
+        binder.readBean(connectionInfo == null ? new YouTrackConnectionConfig() : connectionInfo);
 
         add(url);
         add(token);
         add(project);
         add(new Button("Validate", event -> isValid()));
-
-
     }
 
 }

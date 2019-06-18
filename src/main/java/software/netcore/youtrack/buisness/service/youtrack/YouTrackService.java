@@ -8,7 +8,7 @@ import software.netcore.youtrack.buisness.client.entity.User;
 import software.netcore.youtrack.buisness.client.exception.HostUnreachableException;
 import software.netcore.youtrack.buisness.client.exception.InvalidHostnameException;
 import software.netcore.youtrack.buisness.client.exception.UnauthorizedException;
-import software.netcore.youtrack.buisness.service.youtrack.entity.ConnectionInfo;
+import software.netcore.youtrack.buisness.service.youtrack.entity.YouTrackConnectionConfig;
 import software.netcore.youtrack.buisness.service.youtrack.exception.NotFoundException;
 
 import java.util.Collection;
@@ -23,33 +23,33 @@ public class YouTrackService {
 
     private final YouTrackRestClient restClient;
 
-    public boolean checkProjectAvailability(ConnectionInfo connectionInfo) throws UnauthorizedException,
-            HostUnreachableException, InvalidHostnameException {
-        return getProject(connectionInfo).isPresent();
+    public boolean checkProjectAvailability(YouTrackConnectionConfig youTrackConnectionConfig)
+            throws UnauthorizedException, HostUnreachableException, InvalidHostnameException {
+        return getProject(youTrackConnectionConfig).isPresent();
     }
 
-    public Collection<CustomField> getCustomFields(ConnectionInfo connectionInfo) throws InvalidHostnameException,
-            HostUnreachableException, UnauthorizedException, NotFoundException {
-        Optional<Project> optional = getProject(connectionInfo);
+    public Collection<CustomField> getCustomFields(YouTrackConnectionConfig youTrackConnectionConfig)
+            throws InvalidHostnameException, HostUnreachableException, UnauthorizedException, NotFoundException {
+        Optional<Project> optional = getProject(youTrackConnectionConfig);
         if (!optional.isPresent()) {
-            throw new NotFoundException("Project " + connectionInfo.getProjectName() + " not found");
+            throw new NotFoundException("Project " + youTrackConnectionConfig.getProjectName() + " not found");
         }
         Project project = optional.get();
-        return restClient.getCustomFields(connectionInfo.getApiEndpoint(),
-                connectionInfo.getServiceToken(), project.getId());
+        return restClient.getCustomFields(youTrackConnectionConfig.getApiEndpoint(),
+                youTrackConnectionConfig.getServiceToken(), project.getId());
     }
 
-    public Collection<User> getUsers(ConnectionInfo connectionInfo) throws InvalidHostnameException,
-            HostUnreachableException, UnauthorizedException {
-        return restClient.getUsers(connectionInfo.getApiEndpoint(), connectionInfo.getServiceToken());
+    public Collection<User> getUsers(YouTrackConnectionConfig youTrackConnectionConfig)
+            throws InvalidHostnameException, HostUnreachableException, UnauthorizedException {
+        return restClient.getUsers(youTrackConnectionConfig.getApiEndpoint(), youTrackConnectionConfig.getServiceToken());
     }
 
-    private Optional<Project> getProject(ConnectionInfo connectionInfo) throws UnauthorizedException,
-            HostUnreachableException, InvalidHostnameException {
-        Collection<Project> projects = restClient.getProjects(connectionInfo.getApiEndpoint(),
-                connectionInfo.getServiceToken());
+    private Optional<Project> getProject(YouTrackConnectionConfig youTrackConnectionConfig)
+            throws UnauthorizedException, HostUnreachableException, InvalidHostnameException {
+        Collection<Project> projects = restClient.getProjects(youTrackConnectionConfig.getApiEndpoint(),
+                youTrackConnectionConfig.getServiceToken());
         return projects.stream().filter(project ->
-                Objects.equals(connectionInfo.getProjectName(), project.getName())).findFirst();
+                Objects.equals(youTrackConnectionConfig.getProjectName(), project.getName())).findFirst();
     }
 
 }

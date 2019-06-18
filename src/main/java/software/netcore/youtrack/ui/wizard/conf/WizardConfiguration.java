@@ -35,14 +35,16 @@ public class WizardConfiguration {
                     .step()
                         .title("Map enums")
                         .navigation(EnumsMappingView.NAVIGATION)
+                .and()
+                    .storage(storage())
                 .build();
         //@formatter:on
     }
 
     @Bean
     @UIScope
-    WizardStorage storage() {
-        return new WizardStorage();
+    YouTrackImporterStorage storage() {
+        return new YouTrackImporterStorage();
     }
 
 }

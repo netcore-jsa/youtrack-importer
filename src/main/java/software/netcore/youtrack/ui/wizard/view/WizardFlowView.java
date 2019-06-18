@@ -14,7 +14,7 @@ import com.vaadin.flow.component.page.Viewport;
 import com.vaadin.flow.router.*;
 import lombok.extern.slf4j.Slf4j;
 import software.netcore.youtrack.ui.wizard.conf.WizardFlow;
-import software.netcore.youtrack.ui.wizard.conf.WizardStorage;
+import software.netcore.youtrack.ui.wizard.conf.YouTrackImporterStorage;
 
 import java.util.Objects;
 
@@ -30,14 +30,14 @@ public final class WizardFlowView extends VerticalLayout implements RouterLayout
 
     static final String NAVIGATION = "";
 
-    private final WizardStorage storage;
+    private final YouTrackImporterStorage storage;
     private final WizardFlow wizardFlow;
 
     private final Div contentContainer = new Div();
     private Button next;
     private Button previous;
 
-    public WizardFlowView(WizardStorage storage, WizardFlow wizardFlow) {
+    public WizardFlowView(YouTrackImporterStorage storage, WizardFlow wizardFlow) {
         this.storage = storage;
         this.wizardFlow = wizardFlow;
         buildView();
@@ -83,7 +83,7 @@ public final class WizardFlowView extends VerticalLayout implements RouterLayout
 
     private void navigateToPrevious() {
         FlowStepView flowStep = wizardFlow.getFlowStep();
-        if (Objects.nonNull(flowStep)) {
+         if (Objects.nonNull(flowStep)) {
             UI.getCurrent().navigate(flowStep.getPreviousStepNavigation());
         }
     }
