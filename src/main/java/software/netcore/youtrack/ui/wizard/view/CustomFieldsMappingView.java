@@ -34,9 +34,10 @@ public class CustomFieldsMappingView extends AbstractFlowStepView<YouTrackImport
 
     public static final String NAVIGATION = "custom_fields_mapping";
 
-    private CustomFieldsConfig customFieldsConfig;
     private final Collection<CustomFieldMappingLayout> mappingLayouts = new ArrayList<>();
     private final YouTrackService service;
+
+    private CustomFieldsConfig customFieldsConfig;
 
     public CustomFieldsMappingView(YouTrackImporterStorage storage, WizardFlow wizardFlow, YouTrackService service) {
         super(storage, wizardFlow);
@@ -82,8 +83,7 @@ public class CustomFieldsMappingView extends AbstractFlowStepView<YouTrackImport
         Collection<String> columns = getStorage().getCsvReadResult().getColumns();
 
         customFields.forEach(customField -> {
-            CustomFieldMappingLayout layout = new CustomFieldMappingLayout(customField,
-                    columns, customFieldsConfig);
+            CustomFieldMappingLayout layout = new CustomFieldMappingLayout(customField, columns);
             mappingLayouts.add(layout);
             if (customField.isCanBeEmpty()) {
                 optionalFieldsLayout.add(layout);
@@ -116,28 +116,28 @@ public class CustomFieldsMappingView extends AbstractFlowStepView<YouTrackImport
         throw new IllegalStateException("'asdasdasd");
     }
 
-    private static class CustomFieldMappingLayout extends HorizontalLayout {
+    private class CustomFieldMappingLayout extends HorizontalLayout {
 
         private final ComboBox<String> columnsBox = new ComboBox<>();
 
         @Getter
         private final CustomField customField;
 
-        CustomFieldMappingLayout(CustomField customField, Collection<String> columns, CustomFieldsConfig cfc) {
+        CustomFieldMappingLayout(CustomField customField, Collection<String> columns) {
             this.customField = customField;
-            cfc.getMapping().put(customField, cfc.getMapping().get(customField));
+            customFieldsConfig.getMapping().put(customField, customFieldsConfig.getMapping().get(customField));
 
             Label customFieldLabel = new Label(customField.getField().getName());
             customFieldLabel.setWidth("200px");
             columnsBox.setErrorMessage("The field mapping is required");
             columnsBox.setAllowCustomValue(false);
             columnsBox.setItems(columns);
-            if (cfc.getMapping().containsKey(customField)) {
-                columnsBox.setValue(cfc.getMapping().get(customField));
+            if (customFieldsConfig.getMapping().containsKey(customField)) {
+                columnsBox.setValue(customFieldsConfig.getMapping().get(customField));
             }
             columnsBox.addValueChangeListener(event -> {
                 String column = event.getValue();
-                cfc.getMapping().put(customField, column);
+                customFieldsConfig.getMapping().put(customField, column);
                 validateSelection(event.getValue());
             });
 
@@ -145,7 +145,7 @@ public class CustomFieldsMappingView extends AbstractFlowStepView<YouTrackImport
             add(columnsBox);
         }
 
-        boolean isValid() {
+        private boolean isValid() {
             if (customField.isCanBeEmpty()) {
                 return true;
             }

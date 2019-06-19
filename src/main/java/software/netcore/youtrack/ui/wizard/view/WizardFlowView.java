@@ -30,15 +30,13 @@ public final class WizardFlowView extends VerticalLayout implements RouterLayout
 
     static final String NAVIGATION = "";
 
-    private final YouTrackImporterStorage storage;
     private final WizardFlow wizardFlow;
 
     private final Div contentContainer = new Div();
     private Button next;
     private Button previous;
 
-    public WizardFlowView(YouTrackImporterStorage storage, WizardFlow wizardFlow) {
-        this.storage = storage;
+    public WizardFlowView(WizardFlow wizardFlow) {
         this.wizardFlow = wizardFlow;
         buildView();
     }

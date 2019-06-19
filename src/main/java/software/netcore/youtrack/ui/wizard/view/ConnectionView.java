@@ -29,6 +29,7 @@ import software.netcore.youtrack.ui.wizard.conf.YouTrackImporterStorage;
 public class ConnectionView extends AbstractFlowStepView<YouTrackImporterStorage, YouTrackConnectionConfig> {
 
     public static final String NAVIGATION = "youtrack_connection";
+
     private final YouTrackService service;
 
     private Binder<YouTrackConnectionConfig> binder;

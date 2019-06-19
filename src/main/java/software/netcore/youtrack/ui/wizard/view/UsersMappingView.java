@@ -11,13 +11,12 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.util.StringUtils;
 import software.netcore.youtrack.buisness.client.entity.User;
 import software.netcore.youtrack.buisness.client.exception.HostUnreachableException;
 import software.netcore.youtrack.buisness.client.exception.InvalidHostnameException;
 import software.netcore.youtrack.buisness.client.exception.UnauthorizedException;
 import software.netcore.youtrack.buisness.service.youtrack.YouTrackService;
-import software.netcore.youtrack.buisness.service.youtrack.entity.UsersConfig;
+import software.netcore.youtrack.buisness.service.youtrack.entity.UsersMapper;
 import software.netcore.youtrack.ui.wizard.conf.WizardFlow;
 import software.netcore.youtrack.ui.wizard.conf.YouTrackImporterStorage;
 
@@ -29,7 +28,7 @@ import java.util.*;
 @Slf4j
 @PageTitle("YouTrack importer")
 @Route(value = UsersMappingView.NAVIGATION, layout = WizardFlowView.class)
-public class UsersMappingView extends AbstractFlowStepView<YouTrackImporterStorage, UsersConfig> {
+public class UsersMappingView extends AbstractCsvUniqueValueMappingView<UsersMapper, User> {
 
     public static final String NAVIGATION = "users_mapping";
 
@@ -38,11 +37,26 @@ public class UsersMappingView extends AbstractFlowStepView<YouTrackImporterStora
     private final Div usersMappingsLayout = new Div();
     private final YouTrackService service;
     private Collection<User> youTrackUsers;
-    private UsersConfig usersConfig;
+    private UsersMapper usersMapper;
 
     public UsersMappingView(YouTrackImporterStorage storage, WizardFlow wizardFlow, YouTrackService service) {
-        super(storage, wizardFlow);
+        super(storage, wizardFlow, User::getLogin);
         this.service = service;
+    }
+
+    @Override
+    String getViewTitle() {
+        return "Users mapping: CSV -> YouTrack";
+    }
+
+    @Override
+    String getAdditionButtonCaption() {
+        return "Add column";
+    }
+
+    @Override
+    UsersMapper getEmptyMapper() {
+        return new UsersMapper();
     }
 
     @Override
@@ -51,7 +65,7 @@ public class UsersMappingView extends AbstractFlowStepView<YouTrackImporterStora
         for (UserMappingLayout value : userToMappingLayout.values()) {
             isValid = value.isValid() && isValid;
         }
-        setConfig(isValid ? usersConfig : null);
+        setConfig(isValid ? usersMapper : null);
         return isValid;
     }
 
@@ -62,7 +76,7 @@ public class UsersMappingView extends AbstractFlowStepView<YouTrackImporterStora
 
     void buildView() {
         removeAll();
-        usersConfig = hasStoredConfig() ? getConfig() : new UsersConfig();
+        usersMapper = hasStoredConfig() ? getConfig() : new UsersMapper();
 
         add(new H3("Users mapping: CSV -> YouTrack"));
         youTrackUsers = getYouTrackUsers();
@@ -77,16 +91,16 @@ public class UsersMappingView extends AbstractFlowStepView<YouTrackImporterStora
 
         // load existing mappings if exist
         if (hasStoredConfig()) {
-            getConfig().getSelectedCsvColumns()
+            getConfig().getCsvColumns()
                     .forEach(column -> addCsvColumn(column, false));
             updateMappingLayouts();
         }
     }
 
     private void addCsvColumn(String csvColumn, boolean updateMappingLayouts) {
-        usersConfig.getSelectedCsvColumns().add(csvColumn);
+        usersMapper.getCsvColumns().add(csvColumn);
         selectedCsvColumnsLayout.add(new CsvColumnLabel(csvColumn, listener -> {
-            usersConfig.getSelectedCsvColumns().remove(csvColumn);
+            usersMapper.getCsvColumns().remove(csvColumn);
             if (updateMappingLayouts) {
                 updateMappingLayouts();
             }
@@ -109,7 +123,7 @@ public class UsersMappingView extends AbstractFlowStepView<YouTrackImporterStora
     }
 
     private void updateMappingLayouts() {
-        Collection<String> csvUsers = extractUsersFromColumns(usersConfig.getSelectedCsvColumns());
+        Collection<String> csvUsers = getValuesFromColumns(usersMapper.getCsvColumns());
         Collection<String> toRemove = new HashSet<>();
         Collection<String> toAdd = new HashSet<>();
 
@@ -141,46 +155,24 @@ public class UsersMappingView extends AbstractFlowStepView<YouTrackImporterStora
         });
         toAdd.forEach(csvUser -> {
             if (!userToMappingLayout.containsKey(csvUser)) {
-                UserMappingLayout userMappingLayout = new UserMappingLayout(csvUser, youTrackUsers, usersConfig);
+                UserMappingLayout userMappingLayout = new UserMappingLayout(csvUser, youTrackUsers, usersMapper);
                 userToMappingLayout.put(csvUser, userMappingLayout);
                 usersMappingsLayout.add(userMappingLayout);
             }
         });
     }
 
-    private Collection<String> extractUsersFromColumns(Collection<String> selectedColumns) {
-        Collection<String> users = new HashSet<>();
-        List<Integer> columnsIndexes = new ArrayList<>(selectedColumns.size());
-        // determine columns indexes
-        List<String> csvColumns = getStorage().getCsvReadResult().getColumns();
-        for (int i = 0; i < csvColumns.size(); i++) {
-            for (String selectedColumn : selectedColumns) {
-                if (Objects.equals(csvColumns.get(i), selectedColumn)) {
-                    columnsIndexes.add(i);
-                }
-            }
-        }
 
-        // read users from columns
-        List<List<String>> rows = getStorage().getCsvReadResult().getRows();
-        rows.forEach(row -> columnsIndexes.forEach(index -> {
-            String value = row.get(index);
-            if (!StringUtils.isEmpty(value)) {
-                users.add(value);
-            }
-        }));
-        return users;
-    }
 
     private static class UserMappingLayout extends HorizontalLayout {
 
         private final ComboBox<User> usersBox = new ComboBox<>();
-        private final UsersConfig usersConfig;
+        private final UsersMapper usersMapper;
         private final String csvUser;
 
-        UserMappingLayout(String csvUser, Collection<User> youTrackUsers, UsersConfig usersConfig) {
+        UserMappingLayout(String csvUser, Collection<User> youTrackUsers, UsersMapper usersMapper) {
             this.csvUser = csvUser;
-            this.usersConfig = usersConfig;
+            this.usersMapper = usersMapper;
 
             setDefaultVerticalComponentAlignment(Alignment.CENTER);
             Label csvColumnLabel = new Label(csvUser);
@@ -192,8 +184,8 @@ public class UsersMappingView extends AbstractFlowStepView<YouTrackImporterStora
             usersBox.setAllowCustomValue(false);
             usersBox.addValueChangeListener(event -> validateSelection(event.getValue()));
 
-            if (usersConfig.getMapping().containsKey(csvUser)) {
-                usersBox.setValue(usersConfig.getMapping().get(csvUser));
+            if (usersMapper.getMapping().containsKey(csvUser)) {
+                usersBox.setValue(usersMapper.getMapping().get(csvUser));
             }
 
             add(csvColumnLabel);
@@ -211,7 +203,7 @@ public class UsersMappingView extends AbstractFlowStepView<YouTrackImporterStora
         private boolean validateSelection(User user) {
             boolean isNull = Objects.isNull(user);
             usersBox.setInvalid(isNull);
-            usersConfig.getMapping().put(csvUser, isNull ? null : user);
+            usersMapper.getMapping().put(csvUser, isNull ? null : user);
             return !isNull;
         }
     }

@@ -12,7 +12,7 @@ import java.util.*;
  * @since v. 1.0.0
  */
 @Getter
-public class UsersConfig {
+public class UsersMapper implements UniqueValuesMapper {
 
     /**
      * CSV users to YouTrack users mapping
@@ -20,15 +20,15 @@ public class UsersConfig {
     private final Map<String, User> mapping = new HashMap<>();
 
     /**
-     * Selected CSV columns which rows values are supposed to be Jira users
+     * CSV columns which rows values are supposed to be Jira users
      */
-    private final Set<String> selectedCsvColumns = new HashSet<>();
+    private final Set<String> csvColumns = new HashSet<>();
 
     @Override
     public String toString() {
-        return "UsersConfig{" +
+        return "UsersMapper{" +
                 "mapping=" + StringUtils.join(mapping) +
-                ", selectedCsvColumns=" + Arrays.toString(selectedCsvColumns.toArray()) +
+                ", csvColumns=" + Arrays.toString(csvColumns.toArray()) +
                 '}';
     }
 

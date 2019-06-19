@@ -12,7 +12,7 @@ import java.util.*;
  * @since v. 1.0.0
  */
 @Getter
-public class EnumsConfig {
+public class EnumsMapper implements UniqueValuesMapper {
 
     /**
      * CSV users to YouTrack users mapping
@@ -20,15 +20,15 @@ public class EnumsConfig {
     private final Map<String, CustomField> mapping = new HashMap<>();
 
     /**
-     * Selected CSV columns which rows values are supposed to be Jira users
+     * CSV columns which rows values are supposed to be Jira users
      */
-    private final Set<String> selectedCsvColumns = new HashSet<>();
+    private final Set<String> csvColumns = new HashSet<>();
 
     @Override
     public String toString() {
-        return "EnumsConfig{" +
+        return "EnumsMapper{" +
                 "mapping=" + StringUtils.join(mapping) +
-                ", selectedCsvColumns=" + Arrays.toString(selectedCsvColumns.toArray()) +
+                ", csvColumns=" + Arrays.toString(csvColumns.toArray()) +
                 '}';
     }
 

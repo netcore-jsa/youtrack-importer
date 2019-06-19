@@ -4,7 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.catalina.startup.UserConfig;
 import software.netcore.youtrack.buisness.service.csv.pojo.CsvReadResult;
 import software.netcore.youtrack.buisness.service.youtrack.entity.CustomFieldsConfig;
-import software.netcore.youtrack.buisness.service.youtrack.entity.EnumsConfig;
+import software.netcore.youtrack.buisness.service.youtrack.entity.EnumsMapper;
 import software.netcore.youtrack.buisness.service.youtrack.entity.YouTrackConnectionConfig;
 import software.netcore.youtrack.ui.wizard.view.*;
 
@@ -30,7 +30,7 @@ public class YouTrackImporterStorage extends AbstractWizardStorage {
         return getConfig(UsersMappingView.NAVIGATION);
     }
 
-    public EnumsConfig getEnumsConfig() {
+    public EnumsMapper getEnumsConfig() {
         return getConfig(EnumsMappingView.NAVIGATION);
     }
 

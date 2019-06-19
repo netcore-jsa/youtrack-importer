@@ -13,7 +13,7 @@ import com.vaadin.flow.router.Route;
 import lombok.extern.slf4j.Slf4j;
 import software.netcore.youtrack.buisness.client.entity.CustomField;
 import software.netcore.youtrack.buisness.service.youtrack.YouTrackService;
-import software.netcore.youtrack.buisness.service.youtrack.entity.EnumsConfig;
+import software.netcore.youtrack.buisness.service.youtrack.entity.EnumsMapper;
 import software.netcore.youtrack.ui.wizard.conf.WizardFlow;
 import software.netcore.youtrack.ui.wizard.conf.YouTrackImporterStorage;
 
@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @PageTitle("YouTrack importer")
 @Route(value = EnumsMappingView.NAVIGATION, layout = WizardFlowView.class)
-public class EnumsMappingView extends AbstractFlowStepView<YouTrackImporterStorage, EnumsConfig> {
+public class EnumsMappingView extends AbstractFlowStepView<YouTrackImporterStorage, EnumsMapper> {
 
     public static final String NAVIGATION = "enums_mapping";
 
@@ -32,7 +32,7 @@ public class EnumsMappingView extends AbstractFlowStepView<YouTrackImporterStora
     private final Div enumsMappingsLayout = new Div();
     private final YouTrackService youTrackService;
     private Collection<CustomField> enumFields;
-    private EnumsConfig enumsConfig;
+    private EnumsMapper enumsMapper;
 
     public EnumsMappingView(YouTrackImporterStorage storage, WizardFlow wizardFlow, YouTrackService youTrackService) {
         super(storage, wizardFlow);
@@ -52,7 +52,7 @@ public class EnumsMappingView extends AbstractFlowStepView<YouTrackImporterStora
     @Override
     void buildView() {
         removeAll();
-        enumsConfig = hasStoredConfig() ? getConfig() : new EnumsConfig();
+        enumsMapper = hasStoredConfig() ? getConfig() : new EnumsMapper();
 
         add(new H3("Enums mapping: CSV -> YouTrack"));
 
@@ -77,9 +77,9 @@ public class EnumsMappingView extends AbstractFlowStepView<YouTrackImporterStora
     }
 
     private void addCsvColumn(String csvColumn, boolean updateMappingLayouts) {
-        enumsConfig.getSelectedCsvColumns().add(csvColumn);
+        enumsMapper.getSelectedCsvColumns().add(csvColumn);
         selectedCsvColumnsLayout.add(new CsvColumnLabel(csvColumn, listener -> {
-            enumsConfig.getSelectedCsvColumns().remove(csvColumn);
+            enumsMapper.getSelectedCsvColumns().remove(csvColumn);
             if (updateMappingLayouts) {
                 updateMappingLayouts();
             }
@@ -96,12 +96,12 @@ public class EnumsMappingView extends AbstractFlowStepView<YouTrackImporterStora
     private static class EnumMappingLayout extends HorizontalLayout {
 
         private final ComboBox<CustomField> customFieldBox = new ComboBox<>();
-        private final EnumsConfig enumsConfig;
+        private final EnumsMapper enumsMapper;
         private final String csvEnum;
 
-        public EnumMappingLayout(String csvEnum, Collection<CustomField> customFields, EnumsConfig enumsConfig) {
+        public EnumMappingLayout(String csvEnum, Collection<CustomField> customFields, EnumsMapper enumsMapper) {
             this.csvEnum = csvEnum;
-            this.enumsConfig = enumsConfig;
+            this.enumsMapper = enumsMapper;
 
             setDefaultVerticalComponentAlignment(Alignment.CENTER);
             Label csvColumnLabel = new Label(csvEnum);
@@ -128,7 +128,7 @@ public class EnumsMappingView extends AbstractFlowStepView<YouTrackImporterStora
         private boolean validateSelection(CustomField field) {
             boolean isNull = Objects.isNull(field);
             customFieldBox.setInvalid(isNull);
-            enumsConfig.getMapping().put(csvEnum, isNull ? null : field);
+            enumsMapper.getMapping().put(csvEnum, isNull ? null : field);
             return !isNull;
         }
 
