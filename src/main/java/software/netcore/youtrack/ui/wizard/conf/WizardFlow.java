@@ -105,14 +105,9 @@ public class WizardFlow {
             return this;
         }
 
-        public WizardFlow build() {
-            return wizardFlowBuilder.build();
-        }
-
         public WizardFlowBuilder and() {
             return this.wizardFlowBuilder;
         }
-
 
         private Step buildStep() {
             Step step = new Step();

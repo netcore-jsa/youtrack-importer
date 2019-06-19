@@ -12,7 +12,7 @@ import java.util.*;
  * @since v. 1.0.0
  */
 @Getter
-public class UsersMapper implements UniqueValuesMapper {
+public class UsersMapper implements UniqueValuesMapper<User> {
 
     /**
      * CSV users to YouTrack users mapping

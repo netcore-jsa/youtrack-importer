@@ -12,7 +12,7 @@ import java.util.*;
  * @since v. 1.0.0
  */
 @Getter
-public class EnumsMapper implements UniqueValuesMapper {
+public class EnumsMapper implements UniqueValuesMapper<CustomField> {
 
     /**
      * CSV users to YouTrack users mapping

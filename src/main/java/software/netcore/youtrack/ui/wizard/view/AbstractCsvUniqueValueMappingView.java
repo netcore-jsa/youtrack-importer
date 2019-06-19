@@ -2,14 +2,20 @@ package software.netcore.youtrack.ui.wizard.view;
 
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Hr;
 import com.vaadin.flow.component.html.Label;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
+import lombok.Getter;
 import org.springframework.util.StringUtils;
+import software.netcore.youtrack.buisness.client.exception.HostUnreachableException;
+import software.netcore.youtrack.buisness.client.exception.InvalidHostnameException;
+import software.netcore.youtrack.buisness.client.exception.UnauthorizedException;
 import software.netcore.youtrack.buisness.service.youtrack.entity.UniqueValuesMapper;
+import software.netcore.youtrack.buisness.service.youtrack.exception.NotFoundException;
 import software.netcore.youtrack.ui.wizard.conf.WizardFlow;
 import software.netcore.youtrack.ui.wizard.conf.YouTrackImporterStorage;
 
@@ -19,7 +25,7 @@ import java.util.*;
  * @param <T>
  * @since v. 1.0.0
  */
-public abstract class AbstractCsvUniqueValueMappingView<T extends UniqueValuesMapper, U>
+public abstract class AbstractCsvUniqueValueMappingView<T extends UniqueValuesMapper<U>, U>
         extends AbstractFlowStepView<YouTrackImporterStorage, T> {
 
     @FunctionalInterface
@@ -29,10 +35,13 @@ public abstract class AbstractCsvUniqueValueMappingView<T extends UniqueValuesMa
 
     }
 
+    private final Map<String, MappingLayout> uniqueValueToMappingLayout = new HashMap<>();
     private final ValueExtractor<U, String> valueExtractor;
-    private final Div csvColumnsLayout = new Div();
+    private final Div mappingFormContainer = new Div();
+    private final Div csvColumnButtonsLayout = new Div();
     private final Div mappingsLayout = new Div();
 
+    private Collection<U> youTrackEntities;
     private T mapper;
 
     AbstractCsvUniqueValueMappingView(YouTrackImporterStorage storage, WizardFlow wizardFlow,
@@ -47,36 +56,128 @@ public abstract class AbstractCsvUniqueValueMappingView<T extends UniqueValuesMa
 
     abstract T getEmptyMapper();
 
+    abstract Collection<U> fetchYouTrackEntities() throws UnauthorizedException,
+            HostUnreachableException, InvalidHostnameException, NotFoundException;
+
+    @Override
+    public boolean isValid() {
+        boolean isValid = true;
+        for (MappingLayout value : uniqueValueToMappingLayout.values()) {
+            isValid = value.isValid() && isValid;
+        }
+        setConfig(isValid ? mapper : null);
+        return isValid;
+    }
+
     @Override
     void buildView() {
         removeAll();
+        setMargin(false);
+        setPadding(false);
+
         add(new H3(getViewTitle()));
+        add(mappingFormContainer);
+        mappingFormContainer.setWidth("500px");
 
         mapper = hasStoredConfig() ? getConfig() : getEmptyMapper();
-        AddCsvColumnsDialog dialog = new AddCsvColumnsDialog(getStorage().getCsvReadResult().getColumns(),
+        fetchEntitiesAndBuildMappingForm();
+    }
+
+    private void fetchEntitiesAndBuildMappingForm() {
+        try {
+            youTrackEntities = fetchYouTrackEntities();
+            showMappingForm();
+        } catch (Exception e) {
+            showEntitiesFetchFailure(e);
+        }
+    }
+
+    private void showMappingForm() {
+        mappingFormContainer.removeAll();
+        mappingFormContainer.setWidthFull();
+        AddCsvColumnDialog dialog = new AddCsvColumnDialog(getStorage().getCsvReadResult().getColumns(),
                 csvUser -> addCsvColumn(csvUser, true));
         Button addColumnsBtn = new Button(getAdditionButtonCaption(), VaadinIcon.PLUS.create(),
                 event -> dialog.setOpened(true));
-        add(addColumnsBtn);
-        add(csvColumnsLayout);
-        add(new Hr());
-        add(mappingsLayout);
-    }
+        mappingFormContainer.add(addColumnsBtn);
+        mappingFormContainer.add(csvColumnButtonsLayout);
+        mappingFormContainer.add(new Hr());
+        mappingFormContainer.add(mappingsLayout);
 
-    private void addCsvColumn(String csvColumn, boolean updateMappingLayouts) {
-        mapper.getCsvColumns().add(csvColumn);
-        csvColumnsLayout.add(new CsvColumnLabel(csvColumn, listener -> {
-            mapper.getCsvColumns().remove(csvColumn);
-            if (updateMappingLayouts) {
-                updateMappingLayouts();
-            }
-        }));
-        if (updateMappingLayouts) {
+        if (hasStoredConfig()) {
+            mapper.getCsvColumns()
+                    .forEach(column -> addCsvColumn(column, false));
             updateMappingLayouts();
         }
     }
 
-    Collection<String> getValuesFromColumns(Collection<String> selectedColumns) {
+    private void showEntitiesFetchFailure(Exception exception) {
+        mappingFormContainer.removeAll();
+        mappingFormContainer.add(new Label("Failed to fetch YouTrack entities"));
+        mappingFormContainer.add(new Label("Reason = " + exception.getMessage()));
+        mappingFormContainer.add(new Button("Retry", event -> fetchEntitiesAndBuildMappingForm()));
+    }
+
+    private void addCsvColumn(String csvColumn, boolean updateMappingLayouts) {
+        boolean noPresent = csvColumnButtonsLayout.getChildren().noneMatch(component -> {
+            CsvColumnButton btn = (CsvColumnButton) component;
+            return Objects.equals(btn.getColumn(), csvColumn);
+        });
+        if (noPresent) {
+            mapper.getCsvColumns().add(csvColumn);
+            csvColumnButtonsLayout.add(new CsvColumnButton(csvColumn, listener -> {
+                mapper.getCsvColumns().remove(csvColumn);
+                if (updateMappingLayouts) {
+                    updateMappingLayouts();
+                }
+            }));
+            if (updateMappingLayouts) {
+                updateMappingLayouts();
+            }
+        }
+    }
+
+    private void updateMappingLayouts() {
+        Collection<String> csvUniqueValues = getValuesFromColumns(mapper.getCsvColumns());
+        Collection<String> toRemove = new HashSet<>();
+        Collection<String> toAdd = new HashSet<>();
+
+        for (String mappedUser : uniqueValueToMappingLayout.keySet()) {
+            boolean missing = true;
+            for (String csvUser : csvUniqueValues) {
+                if (Objects.equals(csvUser, mappedUser)) {
+                    missing = false;
+                    break;
+                }
+            }
+            if (missing) {
+                toRemove.add(mappedUser);
+            }
+        }
+
+        for (String csvUser : csvUniqueValues) {
+            if (!uniqueValueToMappingLayout.containsKey(csvUser)) {
+                toAdd.add(csvUser);
+            }
+        }
+
+        toRemove.forEach(csvUser -> {
+            if (uniqueValueToMappingLayout.containsKey(csvUser)) {
+                MappingLayout mappingLayout = uniqueValueToMappingLayout.get(csvUser);
+                mappingLayout.getElement().removeFromParent();
+                uniqueValueToMappingLayout.remove(csvUser);
+            }
+        });
+        toAdd.forEach(csvUser -> {
+            if (!uniqueValueToMappingLayout.containsKey(csvUser)) {
+                MappingLayout userMappingLayout = new MappingLayout(csvUser, youTrackEntities);
+                uniqueValueToMappingLayout.put(csvUser, userMappingLayout);
+                mappingsLayout.add(userMappingLayout);
+            }
+        });
+    }
+
+    private Collection<String> getValuesFromColumns(Collection<String> selectedColumns) {
         Collection<String> values = new HashSet<>();
         List<Integer> columnsIndexes = new ArrayList<>(selectedColumns.size());
         // determine columns indexes
@@ -106,7 +207,7 @@ public abstract class AbstractCsvUniqueValueMappingView<T extends UniqueValuesMa
         private final ComboBox<U> youtrackEntityBox = new ComboBox<>();
         private final String csvUniqueValue;
 
-        public MappingLayout(String csvUniqueValue, Collection<U> youtrackEntities) {
+        MappingLayout(String csvUniqueValue, Collection<U> youtrackEntities) {
             this.csvUniqueValue = csvUniqueValue;
 
             setDefaultVerticalComponentAlignment(Alignment.CENTER);
@@ -115,11 +216,19 @@ public abstract class AbstractCsvUniqueValueMappingView<T extends UniqueValuesMa
 
             youtrackEntityBox.setItems(youtrackEntities);
             youtrackEntityBox.setItemLabelGenerator(valueExtractor::extractValue);
-            youtrackEntityBox.setErrorMessage("User mapping is required");
+            youtrackEntityBox.setErrorMessage("Mapping is required");
             youtrackEntityBox.setAllowCustomValue(false);
             youtrackEntityBox.addValueChangeListener(event -> validateSelection(event.getValue()));
-        }
+            youtrackEntityBox.setWidthFull();
+            if (mapper.getMapping().containsKey(csvUniqueValue)) {
+                U value = mapper.getMapping().get(csvUniqueValue);
+                youtrackEntityBox.setValue(value);
+            }
 
+            setWidthFull();
+            add(csvValueLabel);
+            add(youtrackEntityBox);
+        }
 
         boolean isValid() {
             return validateSelection();
@@ -132,10 +241,49 @@ public abstract class AbstractCsvUniqueValueMappingView<T extends UniqueValuesMa
         private boolean validateSelection(U value) {
             boolean isNull = Objects.isNull(value);
             youtrackEntityBox.setInvalid(isNull);
-            usersConfig.getMapping().put(csvUniqueValue, isNull ? null : value);
+            mapper.getMapping().put(csvUniqueValue, isNull ? null : value);
             return !isNull;
         }
     }
 
+    private class CsvColumnButton extends Button {
+
+        @Getter
+        private String column;
+
+        CsvColumnButton(String column, RemovalListener<String> removalListener) {
+            super(column, VaadinIcon.CLOSE.create(), event -> {
+                event.getSource().getElement().removeFromParent();
+                removalListener.onRemoval(column);
+            });
+            this.column = column;
+            getElement().getStyle().set("margin", "5px");
+        }
+    }
+
+    private class AddCsvColumnDialog extends Dialog {
+
+        AddCsvColumnDialog(Collection<String> csvColumns, AdditionListener<String> additionListener) {
+            ComboBox<String> columnsBox = new ComboBox<>("CSV column");
+            columnsBox.setItems(csvColumns);
+            columnsBox.setWidthFull();
+            add(columnsBox);
+
+            HorizontalLayout controlsLayout = new HorizontalLayout();
+            controlsLayout.add(new Button("Cancel", event -> setOpened(false)));
+            controlsLayout.add(new Button("Add", event -> {
+                String value = columnsBox.getValue();
+                if (StringUtils.isEmpty(value)) {
+                    columnsBox.setErrorMessage("CSV column is required");
+                    columnsBox.setInvalid(true);
+                    return;
+                }
+                additionListener.onAddition(value);
+                setOpened(false);
+            }));
+            controlsLayout.setWidthFull();
+            add(controlsLayout);
+        }
+    }
 
 }

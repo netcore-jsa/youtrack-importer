@@ -1,8 +1,15 @@
 package software.netcore.youtrack.buisness.service.youtrack.entity;
 
+import java.util.Map;
 import java.util.Set;
 
-public interface UniqueValuesMapper {
+/**
+ * @since v. 1.0.0
+ * @param <T>
+ */
+public interface UniqueValuesMapper<T> {
+
+    Map<String, T> getMapping();
 
     Set<String> getCsvColumns();
 

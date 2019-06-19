@@ -4,7 +4,6 @@ import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;
 import software.netcore.youtrack.buisness.client.entity.CustomField;
 
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -14,13 +13,9 @@ import java.util.Map;
  * @since v. 1.0.0
  */
 @Getter
-public class CustomFieldsConfig {
+public class CustomFieldsMapper {
 
     private final Map<CustomField, String> mapping = new HashMap<>();
-
-    public Collection<CustomField> getCustomFields() {
-        return mapping.keySet();
-    }
 
     @Override
     public String toString() {

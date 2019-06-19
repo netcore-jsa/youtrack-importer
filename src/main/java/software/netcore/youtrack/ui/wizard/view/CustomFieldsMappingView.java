@@ -16,7 +16,7 @@ import software.netcore.youtrack.buisness.client.exception.HostUnreachableExcept
 import software.netcore.youtrack.buisness.client.exception.InvalidHostnameException;
 import software.netcore.youtrack.buisness.client.exception.UnauthorizedException;
 import software.netcore.youtrack.buisness.service.youtrack.YouTrackService;
-import software.netcore.youtrack.buisness.service.youtrack.entity.CustomFieldsConfig;
+import software.netcore.youtrack.buisness.service.youtrack.entity.CustomFieldsMapper;
 import software.netcore.youtrack.buisness.service.youtrack.exception.NotFoundException;
 import software.netcore.youtrack.ui.wizard.conf.WizardFlow;
 import software.netcore.youtrack.ui.wizard.conf.YouTrackImporterStorage;
@@ -30,14 +30,14 @@ import java.util.Collection;
 @Slf4j
 @PageTitle("YouTrack importer")
 @Route(value = CustomFieldsMappingView.NAVIGATION, layout = WizardFlowView.class)
-public class CustomFieldsMappingView extends AbstractFlowStepView<YouTrackImporterStorage, CustomFieldsConfig> {
+public class CustomFieldsMappingView extends AbstractFlowStepView<YouTrackImporterStorage, CustomFieldsMapper> {
 
     public static final String NAVIGATION = "custom_fields_mapping";
 
     private final Collection<CustomFieldMappingLayout> mappingLayouts = new ArrayList<>();
     private final YouTrackService service;
 
-    private CustomFieldsConfig customFieldsConfig;
+    private CustomFieldsMapper customFieldsMapper;
 
     public CustomFieldsMappingView(YouTrackImporterStorage storage, WizardFlow wizardFlow, YouTrackService service) {
         super(storage, wizardFlow);
@@ -50,7 +50,7 @@ public class CustomFieldsMappingView extends AbstractFlowStepView<YouTrackImport
         for (CustomFieldMappingLayout mappingLayout : mappingLayouts) {
             valid = mappingLayout.isValid() && valid;
         }
-        setConfig(valid ? customFieldsConfig : null);
+        setConfig(valid ? customFieldsMapper : null);
         return valid;
     }
 
@@ -61,6 +61,9 @@ public class CustomFieldsMappingView extends AbstractFlowStepView<YouTrackImport
 
     void buildView() {
         removeAll();
+        setMargin(false);
+        setPadding(false);
+
         add(new H3("Custom fields mapping: YouTrack -> CSV"));
 
         Div requiredFieldsLayout = new Div();
@@ -78,7 +81,7 @@ public class CustomFieldsMappingView extends AbstractFlowStepView<YouTrackImport
         add(requiredFieldsLayout);
         add(optionalFieldsLayout);
 
-        customFieldsConfig = getCustomFieldsConfig();
+        customFieldsMapper = getCustomFieldsMapper();
         Collection<CustomField> customFields = getCustomFields();
         Collection<String> columns = getStorage().getCsvReadResult().getColumns();
 
@@ -93,13 +96,13 @@ public class CustomFieldsMappingView extends AbstractFlowStepView<YouTrackImport
         });
     }
 
-    private CustomFieldsConfig getCustomFieldsConfig() {
-        return hasStoredConfig() ? getConfig() : new CustomFieldsConfig();
+    private CustomFieldsMapper getCustomFieldsMapper() {
+        return hasStoredConfig() ? getConfig() : new CustomFieldsMapper();
     }
 
     private Collection<CustomField> getCustomFields() {
         if (hasStoredConfig()) {
-            return getCustomFieldsConfig().getMapping().keySet();
+            return getCustomFieldsMapper().getMapping().keySet();
         } else {
             try {
                 return service.getCustomFields(getStorage().getConnectionConfig());
@@ -125,19 +128,19 @@ public class CustomFieldsMappingView extends AbstractFlowStepView<YouTrackImport
 
         CustomFieldMappingLayout(CustomField customField, Collection<String> columns) {
             this.customField = customField;
-            customFieldsConfig.getMapping().put(customField, customFieldsConfig.getMapping().get(customField));
+            customFieldsMapper.getMapping().put(customField, customFieldsMapper.getMapping().get(customField));
 
             Label customFieldLabel = new Label(customField.getField().getName());
             customFieldLabel.setWidth("200px");
             columnsBox.setErrorMessage("The field mapping is required");
             columnsBox.setAllowCustomValue(false);
             columnsBox.setItems(columns);
-            if (customFieldsConfig.getMapping().containsKey(customField)) {
-                columnsBox.setValue(customFieldsConfig.getMapping().get(customField));
+            if (customFieldsMapper.getMapping().containsKey(customField)) {
+                columnsBox.setValue(customFieldsMapper.getMapping().get(customField));
             }
             columnsBox.addValueChangeListener(event -> {
                 String column = event.getValue();
-                customFieldsConfig.getMapping().put(customField, column);
+                customFieldsMapper.getMapping().put(customField, column);
                 validateSelection(event.getValue());
             });
 

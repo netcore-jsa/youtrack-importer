@@ -1,30 +1,28 @@
 package software.netcore.youtrack.ui.wizard.view;
 
-import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.html.Div;
-import com.vaadin.flow.component.html.H3;
-import com.vaadin.flow.component.html.Hr;
-import com.vaadin.flow.component.html.Label;
-import com.vaadin.flow.component.icon.VaadinIcon;
-import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import lombok.extern.slf4j.Slf4j;
 import software.netcore.youtrack.buisness.client.entity.CustomField;
+import software.netcore.youtrack.buisness.client.exception.HostUnreachableException;
+import software.netcore.youtrack.buisness.client.exception.InvalidHostnameException;
+import software.netcore.youtrack.buisness.client.exception.UnauthorizedException;
 import software.netcore.youtrack.buisness.service.youtrack.YouTrackService;
 import software.netcore.youtrack.buisness.service.youtrack.entity.EnumsMapper;
+import software.netcore.youtrack.buisness.service.youtrack.exception.NotFoundException;
 import software.netcore.youtrack.ui.wizard.conf.WizardFlow;
 import software.netcore.youtrack.ui.wizard.conf.YouTrackImporterStorage;
 
 import java.util.Collection;
-import java.util.Objects;
-import java.util.stream.Collectors;
 
+/**
+ * @since v. 1.0.0
+ */
 @Slf4j
 @PageTitle("YouTrack importer")
 @Route(value = EnumsMappingView.NAVIGATION, layout = WizardFlowView.class)
-public class EnumsMappingView extends AbstractFlowStepView<YouTrackImporterStorage, EnumsMapper> {
+public class EnumsMappingView extends AbstractCsvUniqueValueMappingView<EnumsMapper, CustomField> {
 
     public static final String NAVIGATION = "enums_mapping";
 
@@ -35,13 +33,8 @@ public class EnumsMappingView extends AbstractFlowStepView<YouTrackImporterStora
     private EnumsMapper enumsMapper;
 
     public EnumsMappingView(YouTrackImporterStorage storage, WizardFlow wizardFlow, YouTrackService youTrackService) {
-        super(storage, wizardFlow);
+        super(storage, wizardFlow, CustomField::getType);
         this.youTrackService = youTrackService;
-    }
-
-    @Override
-    public boolean isValid() {
-        return false;
     }
 
     @Override
@@ -50,88 +43,24 @@ public class EnumsMappingView extends AbstractFlowStepView<YouTrackImporterStora
     }
 
     @Override
-    void buildView() {
-        removeAll();
-        enumsMapper = hasStoredConfig() ? getConfig() : new EnumsMapper();
-
-        add(new H3("Enums mapping: CSV -> YouTrack"));
-
-        enumFields = getStorage().getCustomFieldsConfig().getCustomFields()
-                .stream().filter(customField ->
-                        customField.getType().toLowerCase().contains("enum")).collect(Collectors.toList());
-        AddCsvColumnsDialog dialog = new AddCsvColumnsDialog(getStorage().getCsvReadResult().getColumns(),
-                csvUser -> addCsvColumn(csvUser, true));
-        Button addColumnsBtn = new Button("Add column", VaadinIcon.PLUS.create(),
-                event -> dialog.setOpened(true));
-        add(addColumnsBtn);
-        add(selectedCsvColumnsLayout);
-        add(new Hr());
-        add(enumsMappingsLayout);
-
-        // load existing mappings if exist
-        if (hasStoredConfig()) {
-            getConfig().getSelectedCsvColumns()
-                    .forEach(column -> addCsvColumn(column, false));
-            updateMappingLayouts();
-        }
+    String getViewTitle() {
+        return "Enums mapping: CSV -> YouTrack";
     }
 
-    private void addCsvColumn(String csvColumn, boolean updateMappingLayouts) {
-        enumsMapper.getSelectedCsvColumns().add(csvColumn);
-        selectedCsvColumnsLayout.add(new CsvColumnLabel(csvColumn, listener -> {
-            enumsMapper.getSelectedCsvColumns().remove(csvColumn);
-            if (updateMappingLayouts) {
-                updateMappingLayouts();
-            }
-        }));
-        if (updateMappingLayouts) {
-            updateMappingLayouts();
-        }
+    @Override
+    String getAdditionButtonCaption() {
+        return "Add column";
     }
 
-    private void updateMappingLayouts() {
-
+    @Override
+    EnumsMapper getEmptyMapper() {
+        return new EnumsMapper();
     }
 
-    private static class EnumMappingLayout extends HorizontalLayout {
-
-        private final ComboBox<CustomField> customFieldBox = new ComboBox<>();
-        private final EnumsMapper enumsMapper;
-        private final String csvEnum;
-
-        public EnumMappingLayout(String csvEnum, Collection<CustomField> customFields, EnumsMapper enumsMapper) {
-            this.csvEnum = csvEnum;
-            this.enumsMapper = enumsMapper;
-
-            setDefaultVerticalComponentAlignment(Alignment.CENTER);
-            Label csvColumnLabel = new Label(csvEnum);
-            csvColumnLabel.setWidth("200px");
-
-            customFieldBox.setItems(customFields);
-            customFieldBox.setItemLabelGenerator(CustomField::getType);
-            customFieldBox.setErrorMessage("Enum mapping is required");
-            customFieldBox.setAllowCustomValue(false);
-            customFieldBox.addValueChangeListener(event -> validateSelection(event.getValue()));
-
-            add(csvColumnLabel);
-            add(customFieldBox);
-        }
-
-        boolean isValid() {
-            return validateSelection();
-        }
-
-        private boolean validateSelection() {
-            return validateSelection(customFieldBox.getValue());
-        }
-
-        private boolean validateSelection(CustomField field) {
-            boolean isNull = Objects.isNull(field);
-            customFieldBox.setInvalid(isNull);
-            enumsMapper.getMapping().put(csvEnum, isNull ? null : field);
-            return !isNull;
-        }
-
+    @Override
+    Collection<CustomField> fetchYouTrackEntities() throws UnauthorizedException,
+            HostUnreachableException, InvalidHostnameException, NotFoundException {
+        return youTrackService.getCustomFields(getStorage().getConnectionConfig());
     }
 
 }

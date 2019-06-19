@@ -44,7 +44,6 @@ public class CsvLoadView extends AbstractFlowStepView<YouTrackImporterStorage, C
 
     @Override
     public boolean isValid() {
-        //TODO validate CSV read result content as well + show validation message
         return Objects.nonNull(getConfig());
     }
 
