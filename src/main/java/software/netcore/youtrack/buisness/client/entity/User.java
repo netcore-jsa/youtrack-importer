@@ -13,7 +13,9 @@ import lombok.Setter;
 public class User {
 
     private String login;
+
     private String fullName;
+
     private String email;
 
     @Override

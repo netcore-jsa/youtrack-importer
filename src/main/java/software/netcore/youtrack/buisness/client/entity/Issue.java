@@ -1,0 +1,50 @@
+package software.netcore.youtrack.buisness.client.entity;
+
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+/**
+ * @since v. 1.0.0
+ */
+@Getter
+@Setter
+@NoArgsConstructor
+public class Issue {
+
+    private String idReadable;
+
+    private Long created;
+
+    private Long updated;
+
+    private Long resolved;
+
+    private Long numberInProject;
+
+    private String summary;
+
+    private String description;
+
+    private User reporter;
+
+    private User updater;
+
+    private User draftOwner;
+
+    private Boolean isDraft;
+
+    private Project project;
+
+    private CustomField[] customFields;
+
+    @Override
+    public String toString() {
+        return "Issue{" +
+                "summary='" + summary + '\'' +
+                ", description='" + description + '\'' +
+                ", project=" + project +
+                '}';
+    }
+
+}

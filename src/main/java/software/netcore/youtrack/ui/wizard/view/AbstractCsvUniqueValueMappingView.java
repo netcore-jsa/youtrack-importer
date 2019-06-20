@@ -25,7 +25,7 @@ import java.util.*;
  * @param <T>
  * @since v. 1.0.0
  */
-public abstract class AbstractCsvUniqueValueMappingView<T extends UniqueValuesMapper<U>, U>
+abstract class AbstractCsvUniqueValueMappingView<T extends UniqueValuesMapper<U>, U>
         extends AbstractFlowStepView<YouTrackImporterStorage, T> {
 
     @FunctionalInterface
@@ -61,6 +61,10 @@ public abstract class AbstractCsvUniqueValueMappingView<T extends UniqueValuesMa
 
     @Override
     public boolean isValid() {
+        if (uniqueValueToMappingLayout.isEmpty()) {
+            setConfig(null);
+            return false;
+        }
         boolean isValid = true;
         for (MappingLayout value : uniqueValueToMappingLayout.values()) {
             isValid = value.isValid() && isValid;
@@ -80,10 +84,10 @@ public abstract class AbstractCsvUniqueValueMappingView<T extends UniqueValuesMa
         mappingFormContainer.setWidth("500px");
 
         mapper = hasStoredConfig() ? getConfig() : getEmptyMapper();
-        fetchEntitiesAndBuildMappingForm();
+        fetchEntitiesAndShowMappingForm();
     }
 
-    private void fetchEntitiesAndBuildMappingForm() {
+    private void fetchEntitiesAndShowMappingForm() {
         try {
             youTrackEntities = fetchYouTrackEntities();
             showMappingForm();
@@ -115,7 +119,7 @@ public abstract class AbstractCsvUniqueValueMappingView<T extends UniqueValuesMa
         mappingFormContainer.removeAll();
         mappingFormContainer.add(new Label("Failed to fetch YouTrack entities"));
         mappingFormContainer.add(new Label("Reason = " + exception.getMessage()));
-        mappingFormContainer.add(new Button("Retry", event -> fetchEntitiesAndBuildMappingForm()));
+        mappingFormContainer.add(new Button("Retry", event -> fetchEntitiesAndShowMappingForm()));
     }
 
     private void addCsvColumn(String csvColumn, boolean updateMappingLayouts) {

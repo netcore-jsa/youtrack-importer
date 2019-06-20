@@ -2,7 +2,7 @@ package software.netcore.youtrack.buisness.service.youtrack;
 
 import lombok.RequiredArgsConstructor;
 import software.netcore.youtrack.buisness.client.YouTrackRestClient;
-import software.netcore.youtrack.buisness.client.entity.CustomField;
+import software.netcore.youtrack.buisness.client.entity.ProjectCustomField;
 import software.netcore.youtrack.buisness.client.entity.Project;
 import software.netcore.youtrack.buisness.client.entity.User;
 import software.netcore.youtrack.buisness.client.exception.HostUnreachableException;
@@ -28,14 +28,14 @@ public class YouTrackService {
         return getProject(youTrackConnectionConfig).isPresent();
     }
 
-    public Collection<CustomField> getCustomFields(YouTrackConnectionConfig youTrackConnectionConfig)
+    public Collection<ProjectCustomField> getCustomFields(YouTrackConnectionConfig youTrackConnectionConfig)
             throws InvalidHostnameException, HostUnreachableException, UnauthorizedException, NotFoundException {
         Optional<Project> optional = getProject(youTrackConnectionConfig);
         if (!optional.isPresent()) {
             throw new NotFoundException("Project " + youTrackConnectionConfig.getProjectName() + " not found");
         }
         Project project = optional.get();
-        return restClient.getCustomFields(youTrackConnectionConfig.getApiEndpoint(),
+        return restClient.getProjectCustomFields(youTrackConnectionConfig.getApiEndpoint(),
                 youTrackConnectionConfig.getServiceToken(), project.getId());
     }
 

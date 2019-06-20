@@ -14,20 +14,25 @@ import lombok.Setter;
 public class CustomField {
 
     private String id;
-    private boolean canBeEmpty;
-    private String emptyFieldText;
-    private Field field;
+
+    private int ordinal;
+
+    private String name;
+
     @JsonProperty("$type")
     private String type;
+
+    private FieldType fieldType;
+
+    private String aliases;
 
     @Override
     public String toString() {
         return "CustomField{" +
                 "id='" + id + '\'' +
-                ", canBeEmpty=" + canBeEmpty +
-                ", emptyFieldText='" + emptyFieldText + '\'' +
-                ", field=" + field +
-                ", type=" + type +
+                ", name='" + name + '\'' +
+                ", type='" + type + '\'' +
+                ", fieldType=" + fieldType +
                 '}';
     }
 

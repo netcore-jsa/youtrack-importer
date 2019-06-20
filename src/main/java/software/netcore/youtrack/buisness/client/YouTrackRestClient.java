@@ -7,8 +7,8 @@ import okhttp3.Headers;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
-import software.netcore.youtrack.buisness.client.entity.CustomField;
 import software.netcore.youtrack.buisness.client.entity.Project;
+import software.netcore.youtrack.buisness.client.entity.ProjectCustomField;
 import software.netcore.youtrack.buisness.client.entity.User;
 import software.netcore.youtrack.buisness.client.exception.HostUnreachableException;
 import software.netcore.youtrack.buisness.client.exception.InvalidHostnameException;
@@ -29,8 +29,8 @@ public class YouTrackRestClient {
 
     private final static String PROJECTS_PATH = "/admin/projects?fields=id,name,shortName,description";
     private final static String USERS_PATH = "/admin/users?fields=login,fullName,email";
-    private final static String CUSTOM_FIELDS_PATH = "/admin/projects/%s/customFields?fields=id,name," +
-            "canBeEmpty,emptyFieldText,field(id,name)";
+    private final static String PROJECT_CUSTOM_FIELDS_PATH = "/admin/projects/%s/customFields?fields=id,name," +
+            "canBeEmpty,emptyFieldText,field(id,name),bundle(name,values(name,description))";
 
     private final OkHttpClient client;
     private final ObjectMapper objectMapper;
@@ -51,8 +51,12 @@ public class YouTrackRestClient {
             Response response = client.newCall(request).execute();
             validateResponse(response);
             String stringResponse = response.body().string();
-            return objectMapper.<List<Project>>readValue(stringResponse, new TypeReference<List<Project>>() {
-            });
+            Collection<Project> projects = objectMapper.<List<Project>>readValue(stringResponse,
+                    new TypeReference<List<Project>>() {
+                    });
+            log.debug("[getProjects] Response body = '{}'",
+                    objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(projects));
+            return projects;
         } catch (UnknownHostException e) {
             log.warn("Failed to get projects. Invalid YouTrack Rest API endpoint");
             throw new InvalidHostnameException("Invalid YouTrack Rest API endpoint");
@@ -74,8 +78,12 @@ public class YouTrackRestClient {
             Response response = client.newCall(request).execute();
             validateResponse(response);
             String stringResponse = response.body().string();
-            return objectMapper.<List<User>>readValue(stringResponse, new TypeReference<List<User>>() {
-            });
+            Collection<User> users = objectMapper.<List<User>>readValue(stringResponse,
+                    new TypeReference<List<User>>() {
+                    });
+            log.debug("[getUsers] Response body = '{}'",
+                    objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(users));
+            return users;
         } catch (UnknownHostException e) {
             log.warn("Failed to get users. Invalid YouTrack Rest API endpoint");
             throw new InvalidHostnameException("Invalid YouTrack Rest API endpoint");
@@ -86,19 +94,23 @@ public class YouTrackRestClient {
         }
     }
 
-    public Collection<CustomField> getCustomFields(String apiEndpoint, String authToken, String projectId)
+    public Collection<ProjectCustomField> getProjectCustomFields(String apiEndpoint, String authToken, String projectId)
             throws UnauthorizedException, InvalidHostnameException, HostUnreachableException {
         try {
             Request request = new Request.Builder()
                     .get()
-                    .url(apiEndpoint + String.format(CUSTOM_FIELDS_PATH, projectId))
+                    .url(apiEndpoint + String.format(PROJECT_CUSTOM_FIELDS_PATH, projectId))
                     .headers(buildHeaders(authToken))
                     .build();
             Response response = client.newCall(request).execute();
             validateResponse(response);
             String stringResponse = response.body().string();
-            return objectMapper.<List<CustomField>>readValue(stringResponse, new TypeReference<List<CustomField>>() {
-            });
+            Collection<ProjectCustomField> customFields = objectMapper.<List<ProjectCustomField>>readValue(stringResponse,
+                    new TypeReference<List<ProjectCustomField>>() {
+                    });
+            log.debug("[getProjectCustomFields] Response body = '{}'",
+                    objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(customFields));
+            return customFields;
         } catch (UnknownHostException e) {
             log.warn("Failed to get project's custom fields. Invalid YouTrack Rest API endpoint");
             throw new InvalidHostnameException("Invalid YouTrack Rest API endpoint");

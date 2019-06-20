@@ -1,6 +1,5 @@
 package software.netcore.youtrack.buisness.client.entity;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -11,19 +10,14 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
-public class Field {
+public class FieldType {
 
     private String id;
-    private String name;
-    @JsonProperty("$type")
-    private String type;
 
     @Override
     public String toString() {
-        return "Field{" +
+        return "FieldType{" +
                 "id='" + id + '\'' +
-                ", name='" + name + '\'' +
-                ", name='" + type + '\'' +
                 '}';
     }
 

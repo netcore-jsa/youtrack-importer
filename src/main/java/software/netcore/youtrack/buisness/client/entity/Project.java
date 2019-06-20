@@ -13,8 +13,21 @@ import lombok.Setter;
 public class Project {
 
     private String id;
+
     private String name;
+
     private String shortName;
+
     private String description;
+
+    @Override
+    public String toString() {
+        return "Project{" +
+                "id='" + id + '\'' +
+                ", name='" + name + '\'' +
+                ", shortName='" + shortName + '\'' +
+                ", description='" + description + '\'' +
+                '}';
+    }
 
 }

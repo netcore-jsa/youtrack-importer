@@ -4,7 +4,7 @@ import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import lombok.extern.slf4j.Slf4j;
-import software.netcore.youtrack.buisness.client.entity.CustomField;
+import software.netcore.youtrack.buisness.client.entity.ProjectCustomField;
 import software.netcore.youtrack.buisness.client.exception.HostUnreachableException;
 import software.netcore.youtrack.buisness.client.exception.InvalidHostnameException;
 import software.netcore.youtrack.buisness.client.exception.UnauthorizedException;
@@ -22,18 +22,18 @@ import java.util.Collection;
 @Slf4j
 @PageTitle("YouTrack importer")
 @Route(value = EnumsMappingView.NAVIGATION, layout = WizardFlowView.class)
-public class EnumsMappingView extends AbstractCsvUniqueValueMappingView<EnumsMapper, CustomField> {
+public class EnumsMappingView extends AbstractCsvUniqueValueMappingView<EnumsMapper, ProjectCustomField> {
 
     public static final String NAVIGATION = "enums_mapping";
 
     private final Div selectedCsvColumnsLayout = new Div();
     private final Div enumsMappingsLayout = new Div();
     private final YouTrackService youTrackService;
-    private Collection<CustomField> enumFields;
+    private Collection<ProjectCustomField> enumFields;
     private EnumsMapper enumsMapper;
 
     public EnumsMappingView(YouTrackImporterStorage storage, WizardFlow wizardFlow, YouTrackService youTrackService) {
-        super(storage, wizardFlow, CustomField::getType);
+        super(storage, wizardFlow, ProjectCustomField::getType);
         this.youTrackService = youTrackService;
     }
 
@@ -58,7 +58,7 @@ public class EnumsMappingView extends AbstractCsvUniqueValueMappingView<EnumsMap
     }
 
     @Override
-    Collection<CustomField> fetchYouTrackEntities() throws UnauthorizedException,
+    Collection<ProjectCustomField> fetchYouTrackEntities() throws UnauthorizedException,
             HostUnreachableException, InvalidHostnameException, NotFoundException {
         return youTrackService.getCustomFields(getStorage().getConnectionConfig());
     }

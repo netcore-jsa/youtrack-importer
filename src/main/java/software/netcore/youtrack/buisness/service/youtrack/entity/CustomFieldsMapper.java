@@ -2,7 +2,7 @@ package software.netcore.youtrack.buisness.service.youtrack.entity;
 
 import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;
-import software.netcore.youtrack.buisness.client.entity.CustomField;
+import software.netcore.youtrack.buisness.client.entity.ProjectCustomField;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -15,7 +15,7 @@ import java.util.Map;
 @Getter
 public class CustomFieldsMapper {
 
-    private final Map<CustomField, String> mapping = new HashMap<>();
+    private final Map<ProjectCustomField, String> mapping = new HashMap<>();
 
     @Override
     public String toString() {
