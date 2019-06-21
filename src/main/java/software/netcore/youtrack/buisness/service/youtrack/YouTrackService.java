@@ -2,9 +2,9 @@ package software.netcore.youtrack.buisness.service.youtrack;
 
 import lombok.RequiredArgsConstructor;
 import software.netcore.youtrack.buisness.client.YouTrackRestClient;
-import software.netcore.youtrack.buisness.client.entity.ProjectCustomField;
+import software.netcore.youtrack.buisness.client.entity.field.project.ProjectCustomField;
 import software.netcore.youtrack.buisness.client.entity.Project;
-import software.netcore.youtrack.buisness.client.entity.User;
+import software.netcore.youtrack.buisness.client.entity.user.User;
 import software.netcore.youtrack.buisness.client.exception.HostUnreachableException;
 import software.netcore.youtrack.buisness.client.exception.InvalidHostnameException;
 import software.netcore.youtrack.buisness.client.exception.UnauthorizedException;

@@ -13,12 +13,12 @@ import com.vaadin.flow.router.Route;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.StringUtils;
-import software.netcore.youtrack.buisness.client.entity.ProjectCustomField;
+import software.netcore.youtrack.buisness.client.entity.field.project.ProjectCustomField;
 import software.netcore.youtrack.buisness.client.exception.HostUnreachableException;
 import software.netcore.youtrack.buisness.client.exception.InvalidHostnameException;
 import software.netcore.youtrack.buisness.client.exception.UnauthorizedException;
 import software.netcore.youtrack.buisness.service.youtrack.YouTrackService;
-import software.netcore.youtrack.buisness.service.youtrack.entity.CustomFieldsMapper;
+import software.netcore.youtrack.buisness.service.youtrack.entity.CustomFieldsMapping;
 import software.netcore.youtrack.buisness.service.youtrack.exception.NotFoundException;
 import software.netcore.youtrack.ui.wizard.conf.WizardFlow;
 import software.netcore.youtrack.ui.wizard.conf.YouTrackImporterStorage;
@@ -32,7 +32,7 @@ import java.util.Collection;
 @Slf4j
 @PageTitle("YouTrack importer")
 @Route(value = CustomFieldsMappingView.NAVIGATION, layout = WizardFlowView.class)
-public class CustomFieldsMappingView extends AbstractFlowStepView<YouTrackImporterStorage, CustomFieldsMapper> {
+public class CustomFieldsMappingView extends AbstractFlowStepView<YouTrackImporterStorage, CustomFieldsMapping> {
 
     public static final String NAVIGATION = "custom_fields_mapping";
 
@@ -41,7 +41,7 @@ public class CustomFieldsMappingView extends AbstractFlowStepView<YouTrackImport
     private final YouTrackService service;
 
     private Collection<ProjectCustomField> customFields;
-    private CustomFieldsMapper mapper;
+    private CustomFieldsMapping mapper;
 
     public CustomFieldsMappingView(YouTrackImporterStorage storage, WizardFlow wizardFlow, YouTrackService service) {
         super(storage, wizardFlow);
@@ -72,7 +72,7 @@ public class CustomFieldsMappingView extends AbstractFlowStepView<YouTrackImport
         add(mappingFormContainer);
         mappingFormContainer.setWidth("500px");
 
-        mapper = hasStoredConfig() ? getConfig() : new CustomFieldsMapper();
+        mapper = hasStoredConfig() ? getConfig() : new CustomFieldsMapping();
         fetchCustomFieldsAndBuildMappingForm();
     }
 
@@ -110,7 +110,7 @@ public class CustomFieldsMappingView extends AbstractFlowStepView<YouTrackImport
         customFields.forEach(customField -> {
             CustomFieldMappingLayout layout = new CustomFieldMappingLayout(customField, columns);
             mappingLayouts.add(layout);
-            if (customField.isCanBeEmpty()) {
+            if (customField.getCanBeEmpty()) {
                 optionalFieldsLayout.add(layout);
             } else {
                 requiredFieldsLayout.add(layout);
@@ -164,7 +164,7 @@ public class CustomFieldsMappingView extends AbstractFlowStepView<YouTrackImport
         }
 
         private boolean isValid() {
-            if (customField.isCanBeEmpty()) {
+            if (customField.getCanBeEmpty()) {
                 return true;
             }
             return validateSelection();

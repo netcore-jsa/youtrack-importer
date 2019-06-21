@@ -3,6 +3,7 @@ package software.netcore.youtrack.buisness.client.entity;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import software.netcore.youtrack.buisness.client.entity.user.User;
 
 /**
  * @since v. 1.0.0
@@ -12,13 +13,21 @@ import lombok.Setter;
 @NoArgsConstructor
 public class IssueComment {
 
+    private String text;
+
+    private Boolean usesMarkDown;
+
+    private String textPreview;
+
+    private Long created;
+
+    private Long updated;
+
     private User author;
 
     private Issue issue;
 
-    private long created;
-
-    private String text;
+    private Boolean deleted;
 
     @Override
     public String toString() {

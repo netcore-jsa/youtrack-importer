@@ -3,6 +3,10 @@ package software.netcore.youtrack.buisness.client.entity;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import software.netcore.youtrack.buisness.client.entity.field.CustomField;
+import software.netcore.youtrack.buisness.client.entity.user.User;
+
+import java.util.Arrays;
 
 /**
  * @since v. 1.0.0
@@ -41,9 +45,19 @@ public class Issue {
     @Override
     public String toString() {
         return "Issue{" +
-                "summary='" + summary + '\'' +
+                "idReadable='" + idReadable + '\'' +
+                ", created=" + created +
+                ", updated=" + updated +
+                ", resolved=" + resolved +
+                ", numberInProject=" + numberInProject +
+                ", summary='" + summary + '\'' +
                 ", description='" + description + '\'' +
+                ", reporter=" + reporter +
+                ", updater=" + updater +
+                ", draftOwner=" + draftOwner +
+                ", isDraft=" + isDraft +
                 ", project=" + project +
+                ", customFields=" + Arrays.toString(customFields) +
                 '}';
     }
 

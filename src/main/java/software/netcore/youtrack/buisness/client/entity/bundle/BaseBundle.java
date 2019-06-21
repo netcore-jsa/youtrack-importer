@@ -21,7 +21,7 @@ public abstract class BaseBundle extends Bundle {
     public String toString() {
         return "BaseBundle{" +
                 super.toString() +
-                ",values=" + Arrays.toString(values) +
+                ", values=" + Arrays.toString(values) +
                 '}';
     }
 

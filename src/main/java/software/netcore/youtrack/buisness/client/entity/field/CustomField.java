@@ -1,9 +1,10 @@
-package software.netcore.youtrack.buisness.client.entity;
+package software.netcore.youtrack.buisness.client.entity.field;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import software.netcore.youtrack.buisness.client.entity.FieldType;
 
 /**
  * @since v. 1.0.0

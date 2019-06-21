@@ -10,8 +10,9 @@ import lombok.Setter;
  */
 @Getter
 @Setter
-public class MandatoryFieldsMapper {
+public class MandatoryFieldsMapping {
 
+    private String issueId;
     private String summary;
     private String description;
     private String comments;

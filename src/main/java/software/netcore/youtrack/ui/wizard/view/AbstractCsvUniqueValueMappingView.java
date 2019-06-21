@@ -14,7 +14,7 @@ import org.springframework.util.StringUtils;
 import software.netcore.youtrack.buisness.client.exception.HostUnreachableException;
 import software.netcore.youtrack.buisness.client.exception.InvalidHostnameException;
 import software.netcore.youtrack.buisness.client.exception.UnauthorizedException;
-import software.netcore.youtrack.buisness.service.youtrack.entity.UniqueValuesMapper;
+import software.netcore.youtrack.buisness.service.youtrack.entity.CsvColumnValuesMapping;
 import software.netcore.youtrack.buisness.service.youtrack.exception.NotFoundException;
 import software.netcore.youtrack.ui.wizard.conf.WizardFlow;
 import software.netcore.youtrack.ui.wizard.conf.YouTrackImporterStorage;
@@ -22,10 +22,12 @@ import software.netcore.youtrack.ui.wizard.conf.YouTrackImporterStorage;
 import java.util.*;
 
 /**
+ * Maps CSV unique columns values to YouTrack entity
+ *
  * @param <T>
  * @since v. 1.0.0
  */
-abstract class AbstractCsvUniqueValueMappingView<T extends UniqueValuesMapper<U>, U>
+abstract class AbstractCsvUniqueValueMappingView<T extends CsvColumnValuesMapping<U>, U>
         extends AbstractFlowStepView<YouTrackImporterStorage, T> {
 
     @FunctionalInterface

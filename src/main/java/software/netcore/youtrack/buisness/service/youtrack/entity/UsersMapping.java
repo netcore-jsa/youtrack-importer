@@ -2,7 +2,7 @@ package software.netcore.youtrack.buisness.service.youtrack.entity;
 
 import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;
-import software.netcore.youtrack.buisness.client.entity.User;
+import software.netcore.youtrack.buisness.client.entity.user.User;
 
 import java.util.*;
 
@@ -12,7 +12,7 @@ import java.util.*;
  * @since v. 1.0.0
  */
 @Getter
-public class UsersMapper implements UniqueValuesMapper<User> {
+public class UsersMapping implements CsvColumnValuesMapping<User> {
 
     /**
      * CSV users to YouTrack users mapping
@@ -26,7 +26,7 @@ public class UsersMapper implements UniqueValuesMapper<User> {
 
     @Override
     public String toString() {
-        return "UsersMapper{" +
+        return "UsersMapping{" +
                 "mapping=" + StringUtils.join(mapping) +
                 ", csvColumns=" + Arrays.toString(csvColumns.toArray()) +
                 '}';

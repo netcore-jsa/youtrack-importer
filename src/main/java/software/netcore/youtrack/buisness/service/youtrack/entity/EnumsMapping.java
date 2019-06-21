@@ -2,7 +2,7 @@ package software.netcore.youtrack.buisness.service.youtrack.entity;
 
 import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;
-import software.netcore.youtrack.buisness.client.entity.ProjectCustomField;
+import software.netcore.youtrack.buisness.client.entity.field.project.ProjectCustomField;
 
 import java.util.*;
 
@@ -12,7 +12,7 @@ import java.util.*;
  * @since v. 1.0.0
  */
 @Getter
-public class EnumsMapper implements UniqueValuesMapper<ProjectCustomField> {
+public class EnumsMapping implements CsvColumnValuesMapping<ProjectCustomField> {
 
     /**
      * CSV users to YouTrack users mapping
@@ -26,7 +26,7 @@ public class EnumsMapper implements UniqueValuesMapper<ProjectCustomField> {
 
     @Override
     public String toString() {
-        return "EnumsMapper{" +
+        return "EnumsMapping{" +
                 "mapping=" + StringUtils.join(mapping) +
                 ", csvColumns=" + Arrays.toString(csvColumns.toArray()) +
                 '}';

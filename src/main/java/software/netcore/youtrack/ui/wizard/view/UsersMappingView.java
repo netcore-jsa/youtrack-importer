@@ -3,12 +3,12 @@ package software.netcore.youtrack.ui.wizard.view;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import lombok.extern.slf4j.Slf4j;
-import software.netcore.youtrack.buisness.client.entity.User;
+import software.netcore.youtrack.buisness.client.entity.user.User;
 import software.netcore.youtrack.buisness.client.exception.HostUnreachableException;
 import software.netcore.youtrack.buisness.client.exception.InvalidHostnameException;
 import software.netcore.youtrack.buisness.client.exception.UnauthorizedException;
 import software.netcore.youtrack.buisness.service.youtrack.YouTrackService;
-import software.netcore.youtrack.buisness.service.youtrack.entity.UsersMapper;
+import software.netcore.youtrack.buisness.service.youtrack.entity.UsersMapping;
 import software.netcore.youtrack.ui.wizard.conf.WizardFlow;
 import software.netcore.youtrack.ui.wizard.conf.YouTrackImporterStorage;
 
@@ -20,7 +20,7 @@ import java.util.Collection;
 @Slf4j
 @PageTitle("YouTrack importer")
 @Route(value = UsersMappingView.NAVIGATION, layout = WizardFlowView.class)
-public class UsersMappingView extends AbstractCsvUniqueValueMappingView<UsersMapper, User> {
+public class UsersMappingView extends AbstractCsvUniqueValueMappingView<UsersMapping, User> {
 
     public static final String NAVIGATION = "users_mapping";
 
@@ -47,8 +47,8 @@ public class UsersMappingView extends AbstractCsvUniqueValueMappingView<UsersMap
     }
 
     @Override
-    UsersMapper getEmptyMapper() {
-        return new UsersMapper();
+    UsersMapping getEmptyMapper() {
+        return new UsersMapping();
     }
 
     @Override

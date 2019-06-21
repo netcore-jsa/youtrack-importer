@@ -24,12 +24,12 @@ import lombok.Setter;
 })
 public abstract class Bundle {
 
+    @JsonProperty("$type")
+    private String type;
+
     private String id;
 
     private boolean isUpdateable;
-
-    @JsonProperty("$type")
-    private String type;
 
     @Override
     public String toString() {

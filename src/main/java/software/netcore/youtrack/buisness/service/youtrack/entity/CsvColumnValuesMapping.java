@@ -7,7 +7,7 @@ import java.util.Set;
  * @since v. 1.0.0
  * @param <T>
  */
-public interface UniqueValuesMapper<T> {
+public interface CsvColumnValuesMapping<T> {
 
     Map<String, T> getMapping();
 
