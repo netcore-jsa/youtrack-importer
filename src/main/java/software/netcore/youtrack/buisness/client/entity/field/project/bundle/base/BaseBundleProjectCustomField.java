@@ -2,7 +2,7 @@ package software.netcore.youtrack.buisness.client.entity.field.project.bundle.ba
 
 import lombok.Getter;
 import lombok.Setter;
-import software.netcore.youtrack.buisness.client.entity.bundle.Bundle;
+import software.netcore.youtrack.buisness.client.entity.bundle.BaseBundle;
 import software.netcore.youtrack.buisness.client.entity.bundle.element.BundleElement;
 import software.netcore.youtrack.buisness.client.entity.field.project.bundle.BundleProjectCustomField;
 
@@ -13,7 +13,7 @@ import java.util.Arrays;
  */
 @Getter
 @Setter
-public abstract class BaseBundleProjectCustomField<T extends Bundle, U extends BundleElement>
+public abstract class BaseBundleProjectCustomField<T extends BaseBundle, U extends BundleElement>
         extends BundleProjectCustomField<T> {
 
     private U[] defaultValues;

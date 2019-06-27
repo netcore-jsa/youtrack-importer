@@ -30,7 +30,7 @@ public class YouTrackRestClient {
     private final static String PROJECTS_PATH = "/admin/projects?fields=id,name,shortName,description";
     private final static String USERS_PATH = "/admin/users?fields=login,fullName,email";
     private final static String PROJECT_CUSTOM_FIELDS_PATH = "/admin/projects/%s/customFields?fields=id,name," +
-            "canBeEmpty,emptyFieldText,field(id,name),bundle(name,values(name,description))";
+            "canBeEmpty,emptyFieldText,field(id,name,type),bundle(id,name,type,values(id,name,description,type))";
 
     private final OkHttpClient client;
     private final ObjectMapper objectMapper;

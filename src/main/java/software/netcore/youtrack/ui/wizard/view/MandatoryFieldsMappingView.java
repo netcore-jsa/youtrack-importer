@@ -54,7 +54,7 @@ public class MandatoryFieldsMappingView extends AbstractFlowStepView<YouTrackImp
         add(new H3("Mandatory fields mapping: YouTrack -> CSV"));
 
         mapper = hasStoredConfig() ? getConfig() : new MandatoryFieldsMapping();
-        Collection<String> csvColumns = getStorage().getCsvReadResult().getColumns();
+        Collection<String> csvColumns = getStorage().getCsvReadResult().getUniqueColumns();
 
         ComboBox<String> issueId = buildComboBox(csvColumns);
         ComboBox<String> summary = buildComboBox(csvColumns);

@@ -8,7 +8,7 @@ import lombok.Setter;
  */
 @Getter
 @Setter
-public class YouTrackConnectionConfig {
+public class ConnectionConfig {
 
     private String apiEndpoint;
     private String serviceToken;
@@ -16,7 +16,7 @@ public class YouTrackConnectionConfig {
 
     @Override
     public String toString() {
-        return "YouTrackConnectionConfig{" +
+        return "ConnectionConfig{" +
                 "apiEndpoint='" + apiEndpoint + '\'' +
                 ", serviceToken='" + serviceToken + '\'' +
                 ", projectName='" + projectName + '\'' +

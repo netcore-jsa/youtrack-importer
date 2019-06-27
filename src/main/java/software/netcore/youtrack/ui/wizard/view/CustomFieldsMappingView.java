@@ -41,7 +41,7 @@ public class CustomFieldsMappingView extends AbstractFlowStepView<YouTrackImport
     private final YouTrackService service;
 
     private Collection<ProjectCustomField> customFields;
-    private CustomFieldsMapping mapper;
+    private CustomFieldsMapping mapping;
 
     public CustomFieldsMappingView(YouTrackImporterStorage storage, WizardFlow wizardFlow, YouTrackService service) {
         super(storage, wizardFlow);
@@ -54,7 +54,7 @@ public class CustomFieldsMappingView extends AbstractFlowStepView<YouTrackImport
         for (CustomFieldMappingLayout mappingLayout : mappingLayouts) {
             valid = mappingLayout.isValid() && valid;
         }
-        setConfig(valid ? mapper : null);
+        setConfig(valid ? mapping : null);
         return valid;
     }
 
@@ -72,13 +72,13 @@ public class CustomFieldsMappingView extends AbstractFlowStepView<YouTrackImport
         add(mappingFormContainer);
         mappingFormContainer.setWidth("500px");
 
-        mapper = hasStoredConfig() ? getConfig() : new CustomFieldsMapping();
+        mapping = hasStoredConfig() ? getConfig() : new CustomFieldsMapping();
         fetchCustomFieldsAndBuildMappingForm();
     }
 
     private void fetchCustomFieldsAndBuildMappingForm() {
         if (hasStoredConfig()) {
-            customFields = mapper.getMapping().keySet();
+            customFields = mapping.getMapping().keySet();
             showMappingForm();
         } else {
             try {
@@ -106,7 +106,7 @@ public class CustomFieldsMappingView extends AbstractFlowStepView<YouTrackImport
         optionalFieldsLayout.add(optionalLabel);
         optionalFieldsLayout.add(new Hr());
 
-        Collection<String> columns = getStorage().getCsvReadResult().getColumns();
+        Collection<String> columns = getStorage().getCsvReadResult().getUniqueColumns();
         customFields.forEach(customField -> {
             CustomFieldMappingLayout layout = new CustomFieldMappingLayout(customField, columns);
             mappingLayouts.add(layout);
@@ -143,19 +143,19 @@ public class CustomFieldsMappingView extends AbstractFlowStepView<YouTrackImport
 
         CustomFieldMappingLayout(ProjectCustomField projectCustomField, Collection<String> columns) {
             this.customField = projectCustomField;
-            mapper.getMapping().put(projectCustomField, mapper.getMapping().get(projectCustomField));
+            mapping.getMapping().put(projectCustomField, mapping.getMapping().get(projectCustomField));
 
             Label customFieldLabel = new Label(projectCustomField.getCustomField().getName());
             customFieldLabel.setWidth("200px");
             columnsBox.setErrorMessage("The field mapping is required");
             columnsBox.setAllowCustomValue(false);
             columnsBox.setItems(columns);
-            if (mapper.getMapping().containsKey(projectCustomField)) {
-                columnsBox.setValue(mapper.getMapping().get(projectCustomField));
+            if (mapping.getMapping().containsKey(projectCustomField)) {
+                columnsBox.setValue(mapping.getMapping().get(projectCustomField));
             }
             columnsBox.addValueChangeListener(event -> {
                 String column = event.getValue();
-                mapper.getMapping().put(projectCustomField, column);
+                mapping.getMapping().put(projectCustomField, column);
                 validateSelection(event.getValue());
             });
 

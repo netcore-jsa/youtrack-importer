@@ -19,7 +19,7 @@ public class CustomFieldsMapping {
 
     @Override
     public String toString() {
-        return "CustomFieldsConfig{" +
+        return "CustomFieldsMapping{" +
                 "mapping=" + StringUtils.join(mapping) +
                 '}';
     }

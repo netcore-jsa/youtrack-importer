@@ -144,7 +144,8 @@ abstract class AbstractCsvUniqueValueMappingView<T extends CsvColumnValuesMappin
     }
 
     private void updateMappingLayouts() {
-        Collection<String> csvUniqueValues = getValuesFromColumns(mapper.getCsvColumns());
+        Collection<String> csvUniqueValues = getStorage().getCsvReadResult()
+                .getUniqueValuesFromColumns(mapper.getCsvColumns());
         Collection<String> toRemove = new HashSet<>();
         Collection<String> toAdd = new HashSet<>();
 
@@ -181,31 +182,6 @@ abstract class AbstractCsvUniqueValueMappingView<T extends CsvColumnValuesMappin
                 mappingsLayout.add(userMappingLayout);
             }
         });
-    }
-
-    private Collection<String> getValuesFromColumns(Collection<String> selectedColumns) {
-        Collection<String> values = new HashSet<>();
-        List<Integer> columnsIndexes = new ArrayList<>(selectedColumns.size());
-        // determine columns indexes
-        List<String> csvColumns = getStorage().getCsvReadResult().getColumns();
-        for (int i = 0; i < csvColumns.size(); i++) {
-            for (String selectedColumn : selectedColumns) {
-                if (Objects.equals(csvColumns.get(i), selectedColumn)) {
-                    columnsIndexes.add(i);
-                    break;
-                }
-            }
-        }
-
-        // read values from columns
-        List<List<String>> rows = getStorage().getCsvReadResult().getRows();
-        rows.forEach(row -> columnsIndexes.forEach(index -> {
-            String value = row.get(index);
-            if (!StringUtils.isEmpty(value)) {
-                values.add(value);
-            }
-        }));
-        return values;
     }
 
     private class MappingLayout extends HorizontalLayout {

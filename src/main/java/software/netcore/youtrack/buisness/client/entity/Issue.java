@@ -3,7 +3,7 @@ package software.netcore.youtrack.buisness.client.entity;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import software.netcore.youtrack.buisness.client.entity.field.CustomField;
+import software.netcore.youtrack.buisness.client.entity.field.issue.IssueCustomField;
 import software.netcore.youtrack.buisness.client.entity.user.User;
 
 import java.util.Arrays;
@@ -40,7 +40,7 @@ public class Issue {
 
     private Project project;
 
-    private CustomField[] customFields;
+    private IssueCustomField[] customFields;
 
     @Override
     public String toString() {

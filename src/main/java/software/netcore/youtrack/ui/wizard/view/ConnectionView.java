@@ -16,7 +16,7 @@ import software.netcore.youtrack.buisness.client.exception.HostUnreachableExcept
 import software.netcore.youtrack.buisness.client.exception.InvalidHostnameException;
 import software.netcore.youtrack.buisness.client.exception.UnauthorizedException;
 import software.netcore.youtrack.buisness.service.youtrack.YouTrackService;
-import software.netcore.youtrack.buisness.service.youtrack.entity.YouTrackConnectionConfig;
+import software.netcore.youtrack.buisness.service.youtrack.entity.ConnectionConfig;
 import software.netcore.youtrack.ui.wizard.conf.WizardFlow;
 import software.netcore.youtrack.ui.wizard.conf.YouTrackImporterStorage;
 
@@ -26,13 +26,13 @@ import software.netcore.youtrack.ui.wizard.conf.YouTrackImporterStorage;
 @Slf4j
 @PageTitle("YouTrack importer")
 @Route(value = ConnectionView.NAVIGATION, layout = WizardFlowView.class)
-public class ConnectionView extends AbstractFlowStepView<YouTrackImporterStorage, YouTrackConnectionConfig> {
+public class ConnectionView extends AbstractFlowStepView<YouTrackImporterStorage, ConnectionConfig> {
 
     public static final String NAVIGATION = "youtrack_connection";
 
     private final YouTrackService service;
 
-    private Binder<YouTrackConnectionConfig> binder;
+    private Binder<ConnectionConfig> binder;
     private TextField url;
     private TextArea token;
     private TextField project;
@@ -49,13 +49,13 @@ public class ConnectionView extends AbstractFlowStepView<YouTrackImporterStorage
 
     @Override
     public boolean isValid() {
-        BinderValidationStatus<YouTrackConnectionConfig> status = binder.validate();
+        BinderValidationStatus<ConnectionConfig> status = binder.validate();
         if (status.isOk()) {
-            YouTrackConnectionConfig youTrackConnectionConfig = new YouTrackConnectionConfig();
-            binder.writeBeanIfValid(youTrackConnectionConfig);
+            ConnectionConfig connectionConfig = new ConnectionConfig();
+            binder.writeBeanIfValid(connectionConfig);
             boolean connectionInfoValid = false;
             try {
-                connectionInfoValid = service.checkProjectAvailability(youTrackConnectionConfig);
+                connectionInfoValid = service.checkProjectAvailability(connectionConfig);
                 if (connectionInfoValid) {
                     Notification.show("YouTrack connection info is valid",
                             3000, Notification.Position.TOP_END);
@@ -73,7 +73,7 @@ public class ConnectionView extends AbstractFlowStepView<YouTrackImporterStorage
                 url.setErrorMessage("Invalid hostname");
                 url.setInvalid(true);
             }
-            setConfig(connectionInfoValid ? youTrackConnectionConfig : null);
+            setConfig(connectionInfoValid ? connectionConfig : null);
             return connectionInfoValid;
         }
         return false;
@@ -94,21 +94,21 @@ public class ConnectionView extends AbstractFlowStepView<YouTrackImporterStorage
         project.setValueChangeMode(ValueChangeMode.EAGER);
         project.setWidthFull();
 
-        binder = new Binder<>(YouTrackConnectionConfig.class);
+        binder = new Binder<>(ConnectionConfig.class);
         binder.forField(url)
                 .withValidator(new StringLengthValidator("API endpoint is required",
                         1, Integer.MAX_VALUE))
-                .bind(YouTrackConnectionConfig::getApiEndpoint, YouTrackConnectionConfig::setApiEndpoint);
+                .bind(ConnectionConfig::getApiEndpoint, ConnectionConfig::setApiEndpoint);
         binder.forField(token)
                 .withValidator(new StringLengthValidator("Service token is required",
                         1, Integer.MAX_VALUE))
-                .bind(YouTrackConnectionConfig::getServiceToken, YouTrackConnectionConfig::setServiceToken);
+                .bind(ConnectionConfig::getServiceToken, ConnectionConfig::setServiceToken);
         binder.forField(project)
                 .withValidator(new StringLengthValidator("Project name is required",
                         1, Integer.MAX_VALUE))
-                .bind(YouTrackConnectionConfig::getProjectName, YouTrackConnectionConfig::setProjectName);
-        YouTrackConnectionConfig connectionInfo = getStorage().getConnectionConfig();
-        binder.readBean(connectionInfo == null ? new YouTrackConnectionConfig() : connectionInfo);
+                .bind(ConnectionConfig::getProjectName, ConnectionConfig::setProjectName);
+        ConnectionConfig connectionInfo = getStorage().getConnectionConfig();
+        binder.readBean(connectionInfo == null ? new ConnectionConfig() : connectionInfo);
 
         add(url);
         add(token);

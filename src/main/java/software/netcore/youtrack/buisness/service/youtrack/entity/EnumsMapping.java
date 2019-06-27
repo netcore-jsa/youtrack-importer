@@ -2,9 +2,14 @@ package software.netcore.youtrack.buisness.service.youtrack.entity;
 
 import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;
-import software.netcore.youtrack.buisness.client.entity.field.project.ProjectCustomField;
+import software.netcore.youtrack.buisness.client.entity.bundle.BaseBundle;
+import software.netcore.youtrack.buisness.client.entity.bundle.element.BundleElement;
+import software.netcore.youtrack.buisness.client.entity.field.project.bundle.base.BaseBundleProjectCustomField;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  * Maps CSV enums to YouTrack enum fields
@@ -12,23 +17,18 @@ import java.util.*;
  * @since v. 1.0.0
  */
 @Getter
-public class EnumsMapping implements CsvColumnValuesMapping<ProjectCustomField> {
+public class EnumsMapping {
 
-    /**
-     * CSV users to YouTrack users mapping
-     */
-    private final Map<String, ProjectCustomField> mapping = new HashMap<>();
+    private final Map<String, Collection<String>> uniqueColumnValuesMapping = new HashMap<>();
 
-    /**
-     * CSV columns which rows values are supposed to be Jira users
-     */
-    private final Set<String> csvColumns = new HashSet<>();
+    private final Map<BaseBundleProjectCustomField<? extends BaseBundle, ? extends BundleElement>,
+            Map<String, BundleElement>> enumsMapping = new LinkedHashMap<>();
 
     @Override
     public String toString() {
         return "EnumsMapping{" +
-                "mapping=" + StringUtils.join(mapping) +
-                ", csvColumns=" + Arrays.toString(csvColumns.toArray()) +
+                "uniqueColumnValuesMapping=" + StringUtils.join(uniqueColumnValuesMapping) +
+                ", enumsMapping=" + StringUtils.join(uniqueColumnValuesMapping) +
                 '}';
     }
 

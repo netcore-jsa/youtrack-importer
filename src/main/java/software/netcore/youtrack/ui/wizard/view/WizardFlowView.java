@@ -10,11 +10,11 @@ import com.vaadin.flow.component.html.Label;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.page.BodySize;
+import com.vaadin.flow.component.page.Push;
 import com.vaadin.flow.component.page.Viewport;
 import com.vaadin.flow.router.*;
 import lombok.extern.slf4j.Slf4j;
 import software.netcore.youtrack.ui.wizard.conf.WizardFlow;
-import software.netcore.youtrack.ui.wizard.conf.YouTrackImporterStorage;
 
 import java.util.Objects;
 
@@ -22,6 +22,7 @@ import java.util.Objects;
  * @since v. 1.0.0
  */
 @Slf4j
+@Push
 @Route(value = WizardFlowView.NAVIGATION)
 @BodySize(height = "100vh", width = "100vw")
 @Viewport("width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes")
@@ -81,7 +82,7 @@ public final class WizardFlowView extends VerticalLayout implements RouterLayout
 
     private void navigateToPrevious() {
         FlowStepView flowStep = wizardFlow.getFlowStep();
-         if (Objects.nonNull(flowStep)) {
+        if (Objects.nonNull(flowStep)) {
             UI.getCurrent().navigate(flowStep.getPreviousStepNavigation());
         }
     }
