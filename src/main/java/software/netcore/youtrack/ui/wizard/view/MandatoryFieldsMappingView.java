@@ -61,12 +61,14 @@ public class MandatoryFieldsMappingView extends AbstractFlowStepView<YouTrackImp
         ComboBox<String> description = buildComboBox(csvColumns);
         ComboBox<String> comments = buildComboBox(csvColumns);
         ComboBox<String> reporter = buildComboBox(csvColumns);
+        ComboBox<String> createdAt = buildComboBox(csvColumns);
 
         add(buildHorizontalLayout(buildCaptionLabel("Issue ID"), issueId));
         add(buildHorizontalLayout(buildCaptionLabel("Summary"), summary));
         add(buildHorizontalLayout(buildCaptionLabel("Description"), description));
         add(buildHorizontalLayout(buildCaptionLabel("Comments"), comments));
         add(buildHorizontalLayout(buildCaptionLabel("Reporter"), reporter));
+        add(buildHorizontalLayout(buildCaptionLabel("Created at"), createdAt));
 
         binder.forField(issueId)
                 .asRequired("Issue ID mapping is required")
@@ -83,6 +85,9 @@ public class MandatoryFieldsMappingView extends AbstractFlowStepView<YouTrackImp
         binder.forField(reporter)
                 .asRequired("Reporter mapping is required")
                 .bind(MandatoryFieldsMapping::getReporter, MandatoryFieldsMapping::setReporter);
+        binder.forField(createdAt)
+                .asRequired("Created at mapping is required")
+                .bind(MandatoryFieldsMapping::getCreatedAt, MandatoryFieldsMapping::setCreatedAt);
         binder.setBean(mapper);
     }
 

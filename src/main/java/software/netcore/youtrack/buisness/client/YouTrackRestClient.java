@@ -2,14 +2,15 @@ package software.netcore.youtrack.buisness.client;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import okhttp3.Headers;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.Response;
+import okhttp3.*;
+import software.netcore.youtrack.buisness.client.entity.Issue;
+import software.netcore.youtrack.buisness.client.entity.IssueComment;
 import software.netcore.youtrack.buisness.client.entity.Project;
 import software.netcore.youtrack.buisness.client.entity.field.project.ProjectCustomField;
 import software.netcore.youtrack.buisness.client.entity.user.User;
+import software.netcore.youtrack.buisness.client.exception.BadRequestException;
 import software.netcore.youtrack.buisness.client.exception.HostUnreachableException;
 import software.netcore.youtrack.buisness.client.exception.InvalidHostnameException;
 import software.netcore.youtrack.buisness.client.exception.UnauthorizedException;
@@ -31,6 +32,8 @@ public class YouTrackRestClient {
     private final static String USERS_PATH = "/admin/users?fields=login,fullName,email";
     private final static String PROJECT_CUSTOM_FIELDS_PATH = "/admin/projects/%s/customFields?fields=id,name," +
             "canBeEmpty,emptyFieldText,field(id,name,type),bundle(id,name,type,values(id,name,description,type))";
+    private static final String ISSUES_PATH = "/issues";
+    private static final String ISSUE_COMMENTS_PATH = "/issues";
 
     private final OkHttpClient client;
     private final ObjectMapper objectMapper;
@@ -40,8 +43,9 @@ public class YouTrackRestClient {
         this.client = new OkHttpClient.Builder().build();
     }
 
-    public Collection<Project> getProjects(String apiEndpoint, String authToken) throws InvalidHostnameException,
-            UnauthorizedException, HostUnreachableException {
+    public Collection<Project> getProjects(@NonNull String apiEndpoint,
+                                           @NonNull String authToken) throws InvalidHostnameException,
+            UnauthorizedException, HostUnreachableException, BadRequestException {
         try {
             Request request = new Request.Builder()
                     .get()
@@ -67,8 +71,9 @@ public class YouTrackRestClient {
         }
     }
 
-    public Collection<User> getUsers(String apiEndpoint, String authToken) throws UnauthorizedException,
-            InvalidHostnameException, HostUnreachableException {
+    public Collection<User> getUsers(@NonNull String apiEndpoint,
+                                     @NonNull String authToken)
+            throws UnauthorizedException, InvalidHostnameException, HostUnreachableException, BadRequestException {
         try {
             Request request = new Request.Builder()
                     .get()
@@ -94,8 +99,10 @@ public class YouTrackRestClient {
         }
     }
 
-    public Collection<ProjectCustomField> getProjectCustomFields(String apiEndpoint, String authToken, String projectId)
-            throws UnauthorizedException, InvalidHostnameException, HostUnreachableException {
+    public Collection<ProjectCustomField> getProjectCustomFields(@NonNull String apiEndpoint,
+                                                                 @NonNull String authToken,
+                                                                 @NonNull String projectId)
+            throws UnauthorizedException, InvalidHostnameException, HostUnreachableException, BadRequestException {
         try {
             Request request = new Request.Builder()
                     .get()
@@ -121,13 +128,62 @@ public class YouTrackRestClient {
         }
     }
 
-    private void validateResponse(Response response) throws InvalidHostnameException, UnauthorizedException {
+    public void createIssue(@NonNull String apiEndpoint,
+                            @NonNull String authToken,
+                            @NonNull Issue issue)
+            throws InvalidHostnameException, UnauthorizedException, HostUnreachableException, BadRequestException {
+        try {
+            String json = objectMapper.writeValueAsString(issue);
+            doPost(json, apiEndpoint + ISSUE_COMMENTS_PATH, authToken);
+        } catch (UnknownHostException e) {
+            log.warn("Failed to create issue comment. Invalid YouTrack Rest API endpoint");
+            throw new InvalidHostnameException("Invalid YouTrack Rest API endpoint");
+        } catch (IOException e) {
+            log.warn("Failed to create issue. YouTrack Rest API endpoint is unreachable. " +
+                    "Reason = '{}'", e.getMessage());
+            throw new HostUnreachableException("YouTrack Rest API endpoint is unreachable");
+        }
+    }
+
+    public void createIssueComment(@NonNull String apiEndpoint,
+                                   @NonNull String authToken,
+                                   @NonNull IssueComment issueComment)
+            throws InvalidHostnameException, HostUnreachableException, UnauthorizedException, BadRequestException {
+        try {
+            String json = objectMapper.writeValueAsString(issueComment);
+            doPost(json, apiEndpoint + ISSUES_PATH, authToken);
+        } catch (UnknownHostException e) {
+            log.warn("Failed to create issue. Invalid YouTrack Rest API endpoint");
+            throw new InvalidHostnameException("Invalid YouTrack Rest API endpoint");
+        } catch (IOException e) {
+            log.warn("Failed to create issue. YouTrack Rest API endpoint is unreachable. " +
+                    "Reason = '{}'", e.getMessage());
+            throw new HostUnreachableException("YouTrack Rest API endpoint is unreachable");
+        }
+    }
+
+    private void doPost(String json, String url, String authToken)
+            throws UnauthorizedException, InvalidHostnameException, IOException, BadRequestException {
+        RequestBody body = RequestBody.create(MediaType.parse(MEDIA_TYPE_JSON), json);
+        Request request = new Request.Builder()
+                .post(body)
+                .url(url)
+                .headers(buildHeaders(authToken))
+                .build();
+        Response response = client.newCall(request).execute();
+        validateResponse(response);
+    }
+
+    private void validateResponse(Response response) throws InvalidHostnameException, UnauthorizedException, BadRequestException {
         switch (response.code()) {
             case 401:
-                log.warn("Failed to get projects. Unauthorized request");
+                log.warn("YouTrack request failed. Unauthorized request");
                 throw new UnauthorizedException("Invalid YouTrack service token");
+            case 400:
+                log.warn("Invalid YouTrack request");
+                throw new BadRequestException(response.message());
             case 404:
-                log.warn("Failed to get projects. Invalid YouTrack REST API endpoint");
+                log.warn("YouTrack request failed. Invalid YouTrack REST API endpoint");
                 throw new InvalidHostnameException("Invalid YouTrack Rest API endpoint");
         }
     }

@@ -2,6 +2,7 @@ package software.netcore.youtrack.ui.wizard.view;
 
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.H3;
+import com.vaadin.flow.component.html.Hr;
 import com.vaadin.flow.component.html.Label;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -21,9 +22,7 @@ import software.netcore.youtrack.buisness.service.youtrack.entity.TranslatedIssu
 import software.netcore.youtrack.ui.wizard.conf.WizardFlow;
 import software.netcore.youtrack.ui.wizard.conf.YouTrackImporterStorage;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 /**
  * @since v. 1.0.0
@@ -59,8 +58,11 @@ public class ImportView extends AbstractFlowStepView<YouTrackImporterStorage, Tr
     @Override
     void buildView() {
         removeAll();
+        setWidthFull();
         setMargin(false);
         setPadding(false);
+
+        contentContainer.setWidthFull();
         contentContainer.setMargin(false);
 
         add(new H3("Review & issues import"));
@@ -73,6 +75,27 @@ public class ImportView extends AbstractFlowStepView<YouTrackImporterStorage, Tr
         }
     }
 
+    private void doImport() {
+        contentContainer.removeAll();
+
+        contentContainer.add("Importing issues");
+        ProgressBar progressBar = new ProgressBar();
+        progressBar.setIndeterminate(true);
+        contentContainer.add(progressBar);
+
+        ListenableFuture<Void> future = service.importTranslatedIssues(getStorage()
+                .getConnectionConfig(), translatedIssues);
+        future.addCallback(result -> getUI().ifPresent(ui -> ui.access(() -> {
+            contentContainer.removeAll();
+            contentContainer.add(new Label("Issues have been imported"));
+        })), ex -> {
+            contentContainer.removeAll();
+            contentContainer.add(new Label("Failed to import issues"));
+            contentContainer.add(new Label("Reason = '" + ex.getMessage() + ""));
+            contentContainer.add(new Button("Retry", event -> doImport()));
+        });
+    }
+
     private void translateCsvToYouTrackIssues() {
         contentContainer.removeAll();
 
@@ -81,7 +104,7 @@ public class ImportView extends AbstractFlowStepView<YouTrackImporterStorage, Tr
         progressBar.setIndeterminate(true);
         contentContainer.add(progressBar);
 
-        ListenableFuture<TranslatedIssues> future = service.createIssuesFromMapping(
+        ListenableFuture<TranslatedIssues> future = service.translateIssuesMapping(
                 getStorage().getConnectionConfig(), getStorage().getCsvReadResult(),
                 getStorage().getCustomFieldsConfig(), getStorage().getMandatoryFieldsMapping(),
                 getStorage().getUsersMapping(), getStorage().getEnumsConfig());
@@ -95,12 +118,14 @@ public class ImportView extends AbstractFlowStepView<YouTrackImporterStorage, Tr
     private void showTranslationError(Throwable ex) {
         contentContainer.removeAll();
         contentContainer.add(new Label("Failed to translate CSV issues to YouTrack issues"));
-        contentContainer.add(new Label("Reason = " + (ex.getMessage() == null ? ex.getClass().getName() : ex.getMessage())));
+        contentContainer.add(new Label("Reason = " + (
+                ex.getMessage() == null ? ex.getClass().getName() : ex.getMessage())));
         contentContainer.add(new Button("Retry", event -> translateCsvToYouTrackIssues()));
     }
 
     private void showTranslatedIssues() {
         contentContainer.removeAll();
+        contentContainer.add(new Button("Import", event -> doImport()));
 
         Page page = new Page(translatedIssues.getIssues().size(), PAGE_SIZE);
         List<IssueLayout> issueLayouts = new ArrayList<>();
@@ -162,35 +187,111 @@ public class ImportView extends AbstractFlowStepView<YouTrackImporterStorage, Tr
         for (IssueLayout issueLayout : issueLayouts.subList(from, to)) {
             issuesContainer.add(issueLayout);
         }
+
     }
 
-    private class IssueLayout extends VerticalLayout {
+    private class IssueLayout extends HorizontalLayout {
 
         IssueLayout(Issue issue, List<IssueComment> issueComments) {
             getElement().getStyle().set("border", "1px solid lightGrey");
+            setPadding(true);
+            setWidthFull();
 
-            add(row("Issue ID", issue.getIdReadable()));
-            add(row("Summary", issue.getSummary()));
-            add(row("Description", issue.getDescription()));
-            add(row("Reporter", issue.getReporter().getLogin()));
+            VerticalLayout issueLayout = new VerticalLayout();
+            issueLayout.setPadding(false);
+            issueLayout.setMargin(false);
+
+            issueLayout.add(row("Issue ID", issue.getIdReadable()));
+            issueLayout.add(row("Summary", issue.getSummary()));
+            issueLayout.add(row("Description", issue.getDescription()));
+            issueLayout.add(row("Reporter", issue.getReporter().getLogin()));
+            issueLayout.add(row("Created at", new Date(issue.getCreated() * 1000).toString()));
             if (Objects.nonNull(issue.getCustomFields())) {
                 for (IssueCustomField customField : issue.getCustomFields()) {
-                    add(row(StringUtils.capitalize(customField.getProjectCustomField().getCustomField().getName()),
-                            customField.getValue().getName()));
+                    issueLayout.add(row(StringUtils.capitalize(customField.getProjectCustomField()
+                            .getCustomField().getName()), customField.getValue().getName()));
                 }
             }
+
+            VerticalLayout commentsLayout = new VerticalLayout();
+            commentsLayout.setPadding(false);
+            commentsLayout.setMargin(false);
+            commentsLayout.add(captionLabel("Comments"));
+            commentsLayout.getElement().getStyle().set("padding-left", "50px");
+
+            if (Objects.isNull(issueComments) || issueComments.isEmpty()) {
+                commentsLayout.add(new Label("No comments"));
+            } else {
+                Iterator<IssueComment> iterator = issueComments.iterator();
+                while (iterator.hasNext()) {
+                    IssueComment issueComment = iterator.next();
+                    commentsLayout.add(new CommentLayout(issueComment));
+                    if (iterator.hasNext()) {
+                        add(new Hr());
+                    }
+                }
+            }
+
+            add(issueLayout);
+            add(commentsLayout);
         }
 
         private HorizontalLayout row(String caption, String value) {
             HorizontalLayout layout = new HorizontalLayout();
+            Label valueLabel = new Label(value);
+            valueLabel.setWidth("400px");
+            valueLabel.getElement().getStyle().set("word-break", "break-all");
+            valueLabel.getElement().getStyle().set("white-space", "break-all");
+            layout.add(captionLabel(caption), valueLabel);
+            return layout;
+        }
+
+        private Label captionLabel(String caption) {
             Label captionLabel = new Label(caption);
             captionLabel.getElement().getStyle().set("font-weight", "bold");
             captionLabel.setWidth("200px");
-            Label valueLabel = new Label(value);
-            valueLabel.setWidth("400px");
-            layout.add(captionLabel, valueLabel);
+            return captionLabel;
+        }
+
+    }
+
+    private class CommentLayout extends VerticalLayout {
+
+        CommentLayout(IssueComment issueComment) {
+            setPadding(false);
+            setMargin(false);
+
+            Label textCaptionLabel = captionLabel("Text");
+            Label textLabel = new Label(issueComment.getText());
+            textLabel.getElement().getStyle().set("word-break", "break-all");
+            if (Objects.nonNull(issueComment.getAuthor())) {
+                Label authorCaptionLabel = captionLabel("Author");
+                Label authorLabel = new Label(issueComment.getAuthor().getLogin());
+                Label createdAtCaptionLabel = captionLabel("Created at");
+                Label createdAtLabel = new Label(new Date(issueComment.getCreated() * 1000).toString());
+                HorizontalLayout layout = new HorizontalLayout(slot(authorCaptionLabel, authorLabel),
+                        slot(createdAtCaptionLabel, createdAtLabel));
+                layout.setPadding(false);
+                layout.setMargin(false);
+                layout.setWidthFull();
+                add(layout);
+            }
+            add(slot(textCaptionLabel, textLabel));
+        }
+
+        private Label captionLabel(String caption) {
+            Label captionLabel = new Label(caption);
+            captionLabel.getElement().getStyle().set("font-weight", "bold");
+            return captionLabel;
+        }
+
+        private VerticalLayout slot(Label captionLabel, Label valueLabel) {
+            VerticalLayout layout = new VerticalLayout(captionLabel, valueLabel);
+            layout.setPadding(false);
+            layout.setMargin(false);
             return layout;
         }
+
     }
 
     @Getter

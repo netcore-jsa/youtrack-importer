@@ -12,6 +12,7 @@ import com.vaadin.flow.data.value.ValueChangeMode;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import lombok.extern.slf4j.Slf4j;
+import software.netcore.youtrack.buisness.client.exception.BadRequestException;
 import software.netcore.youtrack.buisness.client.exception.HostUnreachableException;
 import software.netcore.youtrack.buisness.client.exception.InvalidHostnameException;
 import software.netcore.youtrack.buisness.client.exception.UnauthorizedException;
@@ -72,6 +73,8 @@ public class ConnectionView extends AbstractFlowStepView<YouTrackImporterStorage
             } catch (InvalidHostnameException e) {
                 url.setErrorMessage("Invalid hostname");
                 url.setInvalid(true);
+            } catch (BadRequestException e) {
+                e.printStackTrace();
             }
             setConfig(connectionInfoValid ? connectionConfig : null);
             return connectionInfoValid;

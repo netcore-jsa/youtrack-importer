@@ -17,5 +17,6 @@ public class MandatoryFieldsMapping {
     private String description;
     private String comments;
     private String reporter;
+    private String createdAt;
 
 }

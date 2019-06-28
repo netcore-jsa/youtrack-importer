@@ -14,6 +14,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.StringUtils;
 import software.netcore.youtrack.buisness.client.entity.field.project.ProjectCustomField;
+import software.netcore.youtrack.buisness.client.exception.BadRequestException;
 import software.netcore.youtrack.buisness.client.exception.HostUnreachableException;
 import software.netcore.youtrack.buisness.client.exception.InvalidHostnameException;
 import software.netcore.youtrack.buisness.client.exception.UnauthorizedException;
@@ -130,7 +131,7 @@ public class CustomFieldsMappingView extends AbstractFlowStepView<YouTrackImport
     }
 
     private Collection<ProjectCustomField> fetchCustomFields() throws HostUnreachableException, NotFoundException,
-            UnauthorizedException, InvalidHostnameException {
+            UnauthorizedException, InvalidHostnameException, BadRequestException {
         return service.getCustomFields(getStorage().getConnectionConfig());
     }
 

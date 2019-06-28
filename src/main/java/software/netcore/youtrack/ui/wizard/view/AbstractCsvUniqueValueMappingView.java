@@ -11,6 +11,7 @@ import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import lombok.Getter;
 import org.springframework.util.StringUtils;
+import software.netcore.youtrack.buisness.client.exception.BadRequestException;
 import software.netcore.youtrack.buisness.client.exception.HostUnreachableException;
 import software.netcore.youtrack.buisness.client.exception.InvalidHostnameException;
 import software.netcore.youtrack.buisness.client.exception.UnauthorizedException;
@@ -59,7 +60,7 @@ abstract class AbstractCsvUniqueValueMappingView<T extends CsvColumnValuesMappin
     abstract T getEmptyMapper();
 
     abstract Collection<U> fetchYouTrackEntities() throws UnauthorizedException,
-            HostUnreachableException, InvalidHostnameException, NotFoundException;
+            HostUnreachableException, InvalidHostnameException, NotFoundException, BadRequestException;
 
     @Override
     public boolean isValid() {
