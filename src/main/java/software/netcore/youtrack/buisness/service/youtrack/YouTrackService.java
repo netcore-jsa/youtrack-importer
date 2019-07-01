@@ -10,11 +10,13 @@ import software.netcore.youtrack.buisness.client.YouTrackRestClient;
 import software.netcore.youtrack.buisness.client.entity.Issue;
 import software.netcore.youtrack.buisness.client.entity.IssueComment;
 import software.netcore.youtrack.buisness.client.entity.Project;
-import software.netcore.youtrack.buisness.client.entity.bundle.element.BuildBundleElement;
-import software.netcore.youtrack.buisness.client.entity.bundle.element.BundleElement;
+import software.netcore.youtrack.buisness.client.entity.bundle.element.*;
 import software.netcore.youtrack.buisness.client.entity.field.issue.IssueCustomField;
 import software.netcore.youtrack.buisness.client.entity.field.issue.SingleUserIssueCustomField;
 import software.netcore.youtrack.buisness.client.entity.field.issue.base.SingleBuildIssueCustomField;
+import software.netcore.youtrack.buisness.client.entity.field.issue.base.SingleEnumIssueCustomField;
+import software.netcore.youtrack.buisness.client.entity.field.issue.base.SingleVersionIssueCustomField;
+import software.netcore.youtrack.buisness.client.entity.field.issue.base.StateIssueCustomField;
 import software.netcore.youtrack.buisness.client.entity.field.project.ProjectCustomField;
 import software.netcore.youtrack.buisness.client.entity.field.project.bundle.UserProjectCustomField;
 import software.netcore.youtrack.buisness.client.entity.field.project.bundle.base.*;
@@ -25,7 +27,6 @@ import software.netcore.youtrack.buisness.service.youtrack.entity.*;
 import software.netcore.youtrack.buisness.service.youtrack.exception.NotFoundException;
 
 import java.text.DateFormat;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -34,6 +35,15 @@ import java.util.*;
  */
 @RequiredArgsConstructor
 public class YouTrackService {
+
+    private static final List<DateFormat> DATE_FORMATS = new ArrayList<>();
+
+    static {
+        DATE_FORMATS.add(new SimpleDateFormat("MM/dd/yyyy hh:mm", Locale.getDefault()));
+        DATE_FORMATS.add(new SimpleDateFormat("MM/dd/yy hh:mm:ss aaa", Locale.getDefault()));
+        DATE_FORMATS.add(new SimpleDateFormat("dd/MMM/yyyy hh:mm", Locale.getDefault()));
+        DATE_FORMATS.add(new SimpleDateFormat("dd/MMM/yyyy hh:mm aaa", Locale.getDefault()));
+    }
 
     private final YouTrackRestClient restClient;
 
@@ -114,9 +124,6 @@ public class YouTrackService {
                 commentColumnIndices.add(i);
             }
         }
-//        3/22/2019  2:14:00 PM
-        DateFormat issueDateFormat = new SimpleDateFormat("MM/dd/yyyy hh:mm", Locale.getDefault());
-        DateFormat issueCommentDateFormat = new SimpleDateFormat("MM/dd/yy hh:mm:ss aaa", Locale.getDefault());
         for (List<String> row : csvReadResult.getRows()) {
 
             Issue issue = new Issue();
@@ -125,22 +132,20 @@ public class YouTrackService {
             issue.setSummary(row.get(indices.get(mandatoryFieldsMapping.getSummary())));
             issue.setDescription(row.get(indices.get(mandatoryFieldsMapping.getDescription())));
             try {
-                issue.setCreated(issueDateFormat.parse(row.get(indices.get(mandatoryFieldsMapping.getCreatedAt())))
-                        .toInstant().getEpochSecond());
-            } catch (ParseException e) {
-                e.printStackTrace();
+                issue.setCreated(translateDateString(row.get(indices.get(mandatoryFieldsMapping.getCreatedAt()))));
+            } catch (MappingException e) {
+                return AsyncResult.forExecutionException(e);
             }
             // Translate issue reporter
             String csvReporter = row.get(indices.get(mandatoryFieldsMapping.getReporter()));
-            User user = usersMapping.getMapping().get(csvReporter);
-            if (Objects.isNull(user)) {
+            User reporter = usersMapping.getMapping().get(csvReporter);
+            if (Objects.isNull(reporter)) {
                 return AsyncResult.forExecutionException(new MappingException("Missing mapping for CSV '" +
                         csvReporter + "' user"));
             }
-            issue.setReporter(user);
+            issue.setReporter(reporter);
 
             List<IssueCustomField> issueCustomFields = new ArrayList<>();
-
             for (ProjectCustomField projectCustomField : customFieldsMapping.getMapping().keySet()) {
                 if (projectCustomField instanceof BaseBundleProjectCustomField) {
                     Map<String, BundleElement> bundlesMapping = enumsMapping.getEnumsMapping().get(projectCustomField);
@@ -157,16 +162,49 @@ public class YouTrackService {
                                     BuildBundleElement buildBundleElement = (BuildBundleElement) bundleElement;
                                     issueCustomField.setValue(buildBundleElement);
                                 } else {
-                                    return AsyncResult.forExecutionException(new MappingException("Bundle element type does not match project custom field"));
+                                    return AsyncResult.forExecutionException(new MappingException("Bundle " +
+                                            "element type does not match project custom field"));
                                 }
                                 issueCustomFields.add(issueCustomField);
                             } else if (projectCustomField instanceof EnumProjectCustomField) {
-
+                                SingleEnumIssueCustomField issueCustomField = new SingleEnumIssueCustomField();
+                                issueCustomField.setId(projectCustomField.getId());
+                                issueCustomField.setProjectCustomField(projectCustomField);
+                                BundleElement bundleElement = bundlesMapping.get(csvColumnValue);
+                                if (bundleElement instanceof EnumBundleElement) {
+                                    EnumBundleElement enumBundleElement = (EnumBundleElement) bundleElement;
+                                    issueCustomField.setValue(enumBundleElement);
+                                } else {
+                                    return AsyncResult.forExecutionException(new MappingException("Bundle element " +
+                                            "type does not match project custom field"));
+                                }
                             } else if (projectCustomField instanceof VersionProjectCustomField) {
-
+                                SingleVersionIssueCustomField issueCustomField = new SingleVersionIssueCustomField();
+                                issueCustomField.setId(projectCustomField.getId());
+                                issueCustomField.setProjectCustomField(projectCustomField);
+                                BundleElement bundleElement = bundlesMapping.get(csvColumnValue);
+                                if (bundleElement instanceof VersionBundleElement) {
+                                    VersionBundleElement versionBundleElement = (VersionBundleElement) bundleElement;
+                                    issueCustomField.setValue(versionBundleElement);
+                                } else {
+                                    return AsyncResult.forExecutionException(new MappingException("Bundle element " +
+                                            "type does not match project custom field"));
+                                }
                             } else if (projectCustomField instanceof StateProjectCustomField) {
+                                StateIssueCustomField issueCustomField = new StateIssueCustomField();
+                                issueCustomField.setId(projectCustomField.getId());
+                                issueCustomField.setProjectCustomField(projectCustomField);
+                                BundleElement bundleElement = bundlesMapping.get(csvColumnValue);
+                                if (bundleElement instanceof StateBundleElement) {
+                                    StateBundleElement stateBundleElement = (StateBundleElement) bundleElement;
+                                    issueCustomField.setValue(stateBundleElement);
+                                } else {
+                                    return AsyncResult.forExecutionException(new MappingException("Bundle element " +
+                                            "type does not match project custom field"));
+                                }
                             } else {
-                                return AsyncResult.forExecutionException(new MappingException("Unexpected ProjectCustomField subtype"));
+                                return AsyncResult.forExecutionException(new MappingException("Unexpected " +
+                                        "ProjectCustomField subtype"));
                             }
                         }
                     }
@@ -174,18 +212,19 @@ public class YouTrackService {
                     SingleUserIssueCustomField issueCustomField = new SingleUserIssueCustomField();
                     issueCustomField.setId(projectCustomField.getId());
                     issueCustomField.setProjectCustomField(projectCustomField);
-                    issueCustomField.setValue(usersMapping.getMapping().get(customFieldsMapping.getMapping().get(projectCustomField)));
+
+                    String csvColumn = customFieldsMapping.getMapping().get(projectCustomField);
+                    String csvColumnValue = row.get(indices.get(csvColumn));
+                    User user = usersMapping.getMapping().get(csvColumnValue);
+
+                    issueCustomField.setValue(user);
                     issueCustomFields.add(issueCustomField);
                 } else {
                     return AsyncResult.forExecutionException(new MappingException("Unexpected ProjectCustomField subtype"));
                 }
             }
 
-
-            if (!issueCustomFields.isEmpty()) {
-                issue.setCustomFields(issueCustomFields.toArray(new IssueCustomField[]{}));
-            }
-
+            issue.setCustomFields(issueCustomFields.toArray(new IssueCustomField[]{}));
             for (Integer commentColumnIndex : commentColumnIndices) {
                 String commentString = row.get(commentColumnIndex);
                 if (StringUtils.isEmpty(commentString)) {
@@ -199,14 +238,13 @@ public class YouTrackService {
                     try {
                         IssueComment issueComment = new IssueComment();
                         if (!StringUtils.isEmpty(values[0])) {
-                            Date date = issueCommentDateFormat.parse(values[0]);
-                            issueComment.setCreated(date.toInstant().getEpochSecond());
+                            issueComment.setCreated(translateDateString(values[0]));
                         }
                         issueComment.setAuthor(usersMapping.getMapping().get(values[1]));
                         issueComment.setText(values[2]);
                         issueComment.setIssue(issue);
                         translatedIssues.getIssueComments().get(issue).add(issueComment);
-                    } catch (ParseException e) {
+                    } catch (MappingException e) {
                         return AsyncResult.forExecutionException(e);
                     }
                 } else if (values.length == 1) {
@@ -223,6 +261,16 @@ public class YouTrackService {
             translatedIssues.getIssues().add(issue);
         }
         return AsyncResult.forValue(translatedIssues);
+    }
+
+    private Long translateDateString(String dateString) throws MappingException {
+        for (DateFormat dateFormat : DATE_FORMATS) {
+            try {
+                return dateFormat.parse(dateString).toInstant().getEpochSecond();
+            } catch (Exception ignored) {
+            }
+        }
+        throw new MappingException("Unsupported date string format");
     }
 
     private Optional<Project> getProject(ConnectionConfig connectionConfig)

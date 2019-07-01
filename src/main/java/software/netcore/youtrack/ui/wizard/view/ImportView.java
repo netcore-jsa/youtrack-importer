@@ -16,7 +16,10 @@ import org.springframework.util.StringUtils;
 import org.springframework.util.concurrent.ListenableFuture;
 import software.netcore.youtrack.buisness.client.entity.Issue;
 import software.netcore.youtrack.buisness.client.entity.IssueComment;
+import software.netcore.youtrack.buisness.client.entity.bundle.element.BundleElement;
 import software.netcore.youtrack.buisness.client.entity.field.issue.IssueCustomField;
+import software.netcore.youtrack.buisness.client.entity.field.issue.SingleUserIssueCustomField;
+import software.netcore.youtrack.buisness.client.entity.field.issue.base.BaseIssueCustomField;
 import software.netcore.youtrack.buisness.service.youtrack.YouTrackService;
 import software.netcore.youtrack.buisness.service.youtrack.entity.TranslatedIssues;
 import software.netcore.youtrack.ui.wizard.conf.WizardFlow;
@@ -208,8 +211,21 @@ public class ImportView extends AbstractFlowStepView<YouTrackImporterStorage, Tr
             issueLayout.add(row("Created at", new Date(issue.getCreated() * 1000).toString()));
             if (Objects.nonNull(issue.getCustomFields())) {
                 for (IssueCustomField customField : issue.getCustomFields()) {
-                    issueLayout.add(row(StringUtils.capitalize(customField.getProjectCustomField()
-                            .getCustomField().getName()), customField.getValue().getName()));
+                    if (customField instanceof BaseIssueCustomField) {
+                        BaseIssueCustomField<? extends BundleElement> baseIssueCustomField
+                                = (BaseIssueCustomField<? extends BundleElement>) customField;
+                        issueLayout.add(row(StringUtils.capitalize(customField.getProjectCustomField()
+                                .getCustomField().getName()), baseIssueCustomField.getValue().getName()));
+                    } else if (customField instanceof SingleUserIssueCustomField) {
+                        SingleUserIssueCustomField userIssueCustomField = (SingleUserIssueCustomField) customField;
+                        issueLayout.add(row(StringUtils.capitalize(customField.getProjectCustomField()
+                                .getCustomField().getName()), userIssueCustomField.getValue() == null ?
+                                userIssueCustomField.getProjectCustomField().getEmptyFieldText() :
+                                userIssueCustomField.getValue().getLogin()));
+                    } else {
+                        throw new IllegalStateException("Unexpected IssueCustomField subtype = "
+                                + customField.getClass().getName());
+                    }
                 }
             }
 
