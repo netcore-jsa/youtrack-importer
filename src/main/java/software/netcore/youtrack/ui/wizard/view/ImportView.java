@@ -172,7 +172,7 @@ public class ImportView extends AbstractFlowStepView<YouTrackImporterStorage, Tr
         setHorizontalComponentAlignment(Alignment.CENTER, pagingLayout);
 
         previous.setEnabled(false);
-        if (page.getPages() <= 1) {
+        if (page.getPages() < 1) {
             next.setEnabled(false);
         }
         showPageIssueLayouts(page, pagingLabel, issueLayouts, issuesContainer);

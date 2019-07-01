@@ -193,7 +193,7 @@ public class YouTrackRestClient {
                 .build();
         Response response = client.newCall(request).execute();
         validateResponse(response);
-        return response.body().toString();
+        return response.body().string();
     }
 
     private void validateResponse(Response response) throws InvalidHostnameException, UnauthorizedException,

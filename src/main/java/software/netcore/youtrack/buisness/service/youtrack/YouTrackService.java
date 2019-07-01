@@ -79,7 +79,8 @@ public class YouTrackService {
                 List<IssueComment> comments = translatedIssues.getIssueComments().get(issue);
                 if (Objects.nonNull(comments)) {
                     for (IssueComment comment : comments) {
-                        comment.setIssue(createdIssue);
+                        issue.setIdReadable(createdIssue.getIdReadable());
+                        comment.setIssue(issue);
                         restClient.createIssueComment(connectionConfig.getApiEndpoint(),
                                 connectionConfig.getServiceToken(), comment);
                     }
@@ -172,6 +173,7 @@ public class YouTrackService {
                                         return AsyncResult.forExecutionException(new MappingException("Bundle element " +
                                                 "type does not match project custom field"));
                                     }
+                                    issueCustomFields.add(issueCustomField);
                                 } else if (projectCustomField instanceof VersionProjectCustomField) {
                                     SingleVersionIssueCustomField issueCustomField = new SingleVersionIssueCustomField();
                                     issueCustomField.setId(projectCustomField.getId());
@@ -185,6 +187,7 @@ public class YouTrackService {
                                         return AsyncResult.forExecutionException(new MappingException("Bundle element " +
                                                 "type does not match project custom field"));
                                     }
+                                    issueCustomFields.add(issueCustomField);
                                 } else if (projectCustomField instanceof StateProjectCustomField) {
                                     StateIssueCustomField issueCustomField = new StateIssueCustomField();
                                     issueCustomField.setId(projectCustomField.getId());
@@ -198,6 +201,7 @@ public class YouTrackService {
                                         return AsyncResult.forExecutionException(new MappingException("Bundle element " +
                                                 "type does not match project custom field"));
                                     }
+                                    issueCustomFields.add(issueCustomField);
                                 } else {
                                     return AsyncResult.forExecutionException(new MappingException("Unexpected " +
                                             "ProjectCustomField subtype"));
