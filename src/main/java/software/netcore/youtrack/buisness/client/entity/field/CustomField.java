@@ -1,10 +1,10 @@
 package software.netcore.youtrack.buisness.client.entity.field;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import software.netcore.youtrack.buisness.client.entity.FieldType;
 
 /**
  * @since v. 1.0.0
@@ -12,18 +12,15 @@ import software.netcore.youtrack.buisness.client.entity.FieldType;
 @Getter
 @Setter
 @NoArgsConstructor
+@JsonInclude(value = JsonInclude.Include.NON_NULL)
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "$type", visible = true)
 public class CustomField {
 
     private String id;
 
-    private int ordinal;
+    private Integer ordinal;
 
     private String name;
-
-    @JsonProperty("$type")
-    private String type;
-
-    private FieldType fieldType;
 
     private String aliases;
 
@@ -32,8 +29,6 @@ public class CustomField {
         return "CustomField{" +
                 "id='" + id + '\'' +
                 ", name='" + name + '\'' +
-                ", type='" + type + '\'' +
-                ", fieldType=" + fieldType +
                 '}';
     }
 

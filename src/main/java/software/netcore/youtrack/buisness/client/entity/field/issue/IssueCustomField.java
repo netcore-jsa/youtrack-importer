@@ -1,10 +1,10 @@
 package software.netcore.youtrack.buisness.client.entity.field.issue;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 import software.netcore.youtrack.buisness.client.entity.field.issue.base.SingleBuildIssueCustomField;
 import software.netcore.youtrack.buisness.client.entity.field.issue.base.SingleEnumIssueCustomField;
@@ -17,8 +17,8 @@ import software.netcore.youtrack.buisness.client.entity.field.project.ProjectCus
  */
 @Getter
 @Setter
-@NoArgsConstructor
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "$type")
+@JsonInclude(value = JsonInclude.Include.NON_NULL)
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "$type", visible = true)
 @JsonSubTypes({
         @JsonSubTypes.Type(value = SingleBuildIssueCustomField.class, name = "SingleBuildIssueCustomField"),
         @JsonSubTypes.Type(value = SingleEnumIssueCustomField.class, name = "SingleEnumIssueCustomField"),
@@ -30,8 +30,7 @@ public abstract class IssueCustomField<T> {
 
     private String id;
 
-    @JsonProperty("$type")
-    private String $type;
+    private String name;
 
     private ProjectCustomField projectCustomField;
 

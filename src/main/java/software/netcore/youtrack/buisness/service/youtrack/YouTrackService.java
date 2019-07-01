@@ -74,10 +74,12 @@ public class YouTrackService {
                                                          @NonNull TranslatedIssues translatedIssues) {
         try {
             for (Issue issue : translatedIssues.getIssues()) {
-                restClient.createIssue(connectionConfig.getApiEndpoint(), connectionConfig.getServiceToken(), issue);
+                Issue createdIssue = restClient.createIssue(connectionConfig.getApiEndpoint(),
+                        connectionConfig.getServiceToken(), issue);
                 List<IssueComment> comments = translatedIssues.getIssueComments().get(issue);
                 if (Objects.nonNull(comments)) {
                     for (IssueComment comment : comments) {
+                        comment.setIssue(createdIssue);
                         restClient.createIssueComment(connectionConfig.getApiEndpoint(),
                                 connectionConfig.getServiceToken(), comment);
                     }
@@ -101,18 +103,13 @@ public class YouTrackService {
         TranslatedIssues translatedIssues = new TranslatedIssues();
         Project project;
         try {
-            Optional<Project> optional = null;
-            try {
-                optional = getProject(connectionConfig);
-            } catch (BadRequestException e) {
-                e.printStackTrace();
-            }
+            Optional<Project> optional = getProject(connectionConfig);
             if (!optional.isPresent()) {
                 return AsyncResult.forExecutionException(new NotFoundException("Project " +
                         connectionConfig.getProjectName() + " not found"));
             }
             project = optional.get();
-        } catch (UnauthorizedException | HostUnreachableException | InvalidHostnameException e) {
+        } catch (UnauthorizedException | HostUnreachableException | InvalidHostnameException | BadRequestException e) {
             return AsyncResult.forExecutionException(e);
         }
 
@@ -124,141 +121,136 @@ public class YouTrackService {
                 commentColumnIndices.add(i);
             }
         }
-        for (List<String> row : csvReadResult.getRows()) {
-
-            Issue issue = new Issue();
-            issue.setProject(project);
-            issue.setIdReadable(row.get(indices.get(mandatoryFieldsMapping.getIssueId())));
-            issue.setSummary(row.get(indices.get(mandatoryFieldsMapping.getSummary())));
-            issue.setDescription(row.get(indices.get(mandatoryFieldsMapping.getDescription())));
-            try {
+        try {
+            for (List<String> row : csvReadResult.getRows()) {
+                Issue issue = new Issue();
+                issue.setProject(project);
+                issue.setIdReadable(row.get(indices.get(mandatoryFieldsMapping.getIssueId())));
+                issue.setSummary(row.get(indices.get(mandatoryFieldsMapping.getSummary())));
+                issue.setDescription(row.get(indices.get(mandatoryFieldsMapping.getDescription())));
                 issue.setCreated(translateDateString(row.get(indices.get(mandatoryFieldsMapping.getCreatedAt()))));
-            } catch (MappingException e) {
-                return AsyncResult.forExecutionException(e);
-            }
-            // Translate issue reporter
-            String csvReporter = row.get(indices.get(mandatoryFieldsMapping.getReporter()));
-            User reporter = usersMapping.getMapping().get(csvReporter);
-            if (Objects.isNull(reporter)) {
-                return AsyncResult.forExecutionException(new MappingException("Missing mapping for CSV '" +
-                        csvReporter + "' user"));
-            }
-            issue.setReporter(reporter);
+                String csvReporter = row.get(indices.get(mandatoryFieldsMapping.getReporter()));
+                User reporter = usersMapping.getMapping().get(csvReporter);
+                if (Objects.isNull(reporter)) {
+                    return AsyncResult.forExecutionException(new MappingException("Missing mapping for CSV '" +
+                            csvReporter + "' user"));
+                }
+                issue.setReporter(reporter);
 
-            List<IssueCustomField> issueCustomFields = new ArrayList<>();
-            for (ProjectCustomField projectCustomField : customFieldsMapping.getMapping().keySet()) {
-                if (projectCustomField instanceof BaseBundleProjectCustomField) {
-                    Map<String, BundleElement> bundlesMapping = enumsMapping.getEnumsMapping().get(projectCustomField);
-                    String csvColumn = customFieldsMapping.getMapping().get(projectCustomField);
-                    if (!StringUtils.isEmpty(csvColumn)) {
-                        String csvColumnValue = row.get(indices.get(csvColumn));
-                        if (!StringUtils.isEmpty(csvColumnValue)) {
-                            if (projectCustomField instanceof BuildProjectCustomField) {
-                                SingleBuildIssueCustomField issueCustomField = new SingleBuildIssueCustomField();
-                                issueCustomField.setId(projectCustomField.getId());
-                                issueCustomField.setProjectCustomField(projectCustomField);
-                                BundleElement bundleElement = bundlesMapping.get(csvColumnValue);
-                                if (bundleElement instanceof BuildBundleElement) {
-                                    BuildBundleElement buildBundleElement = (BuildBundleElement) bundleElement;
-                                    issueCustomField.setValue(buildBundleElement);
+                List<IssueCustomField> issueCustomFields = new ArrayList<>();
+                for (ProjectCustomField projectCustomField : customFieldsMapping.getMapping().keySet()) {
+                    if (projectCustomField instanceof BaseBundleProjectCustomField) {
+                        Map<String, BundleElement> bundlesMapping = enumsMapping.getEnumsMapping().get(projectCustomField);
+                        String csvColumn = customFieldsMapping.getMapping().get(projectCustomField);
+                        if (!StringUtils.isEmpty(csvColumn)) {
+                            String csvColumnValue = row.get(indices.get(csvColumn));
+                            if (!StringUtils.isEmpty(csvColumnValue)) {
+                                if (projectCustomField instanceof BuildProjectCustomField) {
+                                    SingleBuildIssueCustomField issueCustomField = new SingleBuildIssueCustomField();
+                                    issueCustomField.setId(projectCustomField.getId());
+                                    issueCustomField.setProjectCustomField(projectCustomField);
+                                    issueCustomField.setName(projectCustomField.getCustomField().getName());
+                                    BundleElement bundleElement = bundlesMapping.get(csvColumnValue);
+                                    if (bundleElement instanceof BuildBundleElement) {
+                                        BuildBundleElement buildBundleElement = (BuildBundleElement) bundleElement;
+                                        issueCustomField.setValue(buildBundleElement);
+                                    } else {
+                                        return AsyncResult.forExecutionException(new MappingException("Bundle " +
+                                                "element type does not match project custom field"));
+                                    }
+                                    issueCustomFields.add(issueCustomField);
+                                } else if (projectCustomField instanceof EnumProjectCustomField) {
+                                    SingleEnumIssueCustomField issueCustomField = new SingleEnumIssueCustomField();
+                                    issueCustomField.setId(projectCustomField.getId());
+                                    issueCustomField.setProjectCustomField(projectCustomField);
+                                    issueCustomField.setName(projectCustomField.getCustomField().getName());
+                                    BundleElement bundleElement = bundlesMapping.get(csvColumnValue);
+                                    if (bundleElement instanceof EnumBundleElement) {
+                                        EnumBundleElement enumBundleElement = (EnumBundleElement) bundleElement;
+                                        issueCustomField.setValue(enumBundleElement);
+                                    } else {
+                                        return AsyncResult.forExecutionException(new MappingException("Bundle element " +
+                                                "type does not match project custom field"));
+                                    }
+                                } else if (projectCustomField instanceof VersionProjectCustomField) {
+                                    SingleVersionIssueCustomField issueCustomField = new SingleVersionIssueCustomField();
+                                    issueCustomField.setId(projectCustomField.getId());
+                                    issueCustomField.setProjectCustomField(projectCustomField);
+                                    issueCustomField.setName(projectCustomField.getCustomField().getName());
+                                    BundleElement bundleElement = bundlesMapping.get(csvColumnValue);
+                                    if (bundleElement instanceof VersionBundleElement) {
+                                        VersionBundleElement versionBundleElement = (VersionBundleElement) bundleElement;
+                                        issueCustomField.setValue(versionBundleElement);
+                                    } else {
+                                        return AsyncResult.forExecutionException(new MappingException("Bundle element " +
+                                                "type does not match project custom field"));
+                                    }
+                                } else if (projectCustomField instanceof StateProjectCustomField) {
+                                    StateIssueCustomField issueCustomField = new StateIssueCustomField();
+                                    issueCustomField.setId(projectCustomField.getId());
+                                    issueCustomField.setProjectCustomField(projectCustomField);
+                                    issueCustomField.setName(projectCustomField.getCustomField().getName());
+                                    BundleElement bundleElement = bundlesMapping.get(csvColumnValue);
+                                    if (bundleElement instanceof StateBundleElement) {
+                                        StateBundleElement stateBundleElement = (StateBundleElement) bundleElement;
+                                        issueCustomField.setValue(stateBundleElement);
+                                    } else {
+                                        return AsyncResult.forExecutionException(new MappingException("Bundle element " +
+                                                "type does not match project custom field"));
+                                    }
                                 } else {
-                                    return AsyncResult.forExecutionException(new MappingException("Bundle " +
-                                            "element type does not match project custom field"));
+                                    return AsyncResult.forExecutionException(new MappingException("Unexpected " +
+                                            "ProjectCustomField subtype"));
                                 }
-                                issueCustomFields.add(issueCustomField);
-                            } else if (projectCustomField instanceof EnumProjectCustomField) {
-                                SingleEnumIssueCustomField issueCustomField = new SingleEnumIssueCustomField();
-                                issueCustomField.setId(projectCustomField.getId());
-                                issueCustomField.setProjectCustomField(projectCustomField);
-                                BundleElement bundleElement = bundlesMapping.get(csvColumnValue);
-                                if (bundleElement instanceof EnumBundleElement) {
-                                    EnumBundleElement enumBundleElement = (EnumBundleElement) bundleElement;
-                                    issueCustomField.setValue(enumBundleElement);
-                                } else {
-                                    return AsyncResult.forExecutionException(new MappingException("Bundle element " +
-                                            "type does not match project custom field"));
-                                }
-                            } else if (projectCustomField instanceof VersionProjectCustomField) {
-                                SingleVersionIssueCustomField issueCustomField = new SingleVersionIssueCustomField();
-                                issueCustomField.setId(projectCustomField.getId());
-                                issueCustomField.setProjectCustomField(projectCustomField);
-                                BundleElement bundleElement = bundlesMapping.get(csvColumnValue);
-                                if (bundleElement instanceof VersionBundleElement) {
-                                    VersionBundleElement versionBundleElement = (VersionBundleElement) bundleElement;
-                                    issueCustomField.setValue(versionBundleElement);
-                                } else {
-                                    return AsyncResult.forExecutionException(new MappingException("Bundle element " +
-                                            "type does not match project custom field"));
-                                }
-                            } else if (projectCustomField instanceof StateProjectCustomField) {
-                                StateIssueCustomField issueCustomField = new StateIssueCustomField();
-                                issueCustomField.setId(projectCustomField.getId());
-                                issueCustomField.setProjectCustomField(projectCustomField);
-                                BundleElement bundleElement = bundlesMapping.get(csvColumnValue);
-                                if (bundleElement instanceof StateBundleElement) {
-                                    StateBundleElement stateBundleElement = (StateBundleElement) bundleElement;
-                                    issueCustomField.setValue(stateBundleElement);
-                                } else {
-                                    return AsyncResult.forExecutionException(new MappingException("Bundle element " +
-                                            "type does not match project custom field"));
-                                }
-                            } else {
-                                return AsyncResult.forExecutionException(new MappingException("Unexpected " +
-                                        "ProjectCustomField subtype"));
                             }
                         }
+                    } else if (projectCustomField instanceof UserProjectCustomField) {
+                        SingleUserIssueCustomField issueCustomField = new SingleUserIssueCustomField();
+                        issueCustomField.setId(projectCustomField.getId());
+                        issueCustomField.setProjectCustomField(projectCustomField);
+                        issueCustomField.setName(projectCustomField.getCustomField().getName());
+
+                        String csvColumn = customFieldsMapping.getMapping().get(projectCustomField);
+                        String csvColumnValue = row.get(indices.get(csvColumn));
+                        User user = usersMapping.getMapping().get(csvColumnValue);
+
+                        issueCustomField.setValue(user);
+                        issueCustomFields.add(issueCustomField);
+                    } else {
+                        return AsyncResult.forExecutionException(
+                                new MappingException("Unexpected ProjectCustomField subtype"));
                     }
-                } else if (projectCustomField instanceof UserProjectCustomField) {
-                    SingleUserIssueCustomField issueCustomField = new SingleUserIssueCustomField();
-                    issueCustomField.setId(projectCustomField.getId());
-                    issueCustomField.setProjectCustomField(projectCustomField);
-
-                    String csvColumn = customFieldsMapping.getMapping().get(projectCustomField);
-                    String csvColumnValue = row.get(indices.get(csvColumn));
-                    User user = usersMapping.getMapping().get(csvColumnValue);
-
-                    issueCustomField.setValue(user);
-                    issueCustomFields.add(issueCustomField);
-                } else {
-                    return AsyncResult.forExecutionException(new MappingException("Unexpected ProjectCustomField subtype"));
                 }
-            }
 
-            issue.setCustomFields(issueCustomFields.toArray(new IssueCustomField[]{}));
-            for (Integer commentColumnIndex : commentColumnIndices) {
-                String commentString = row.get(commentColumnIndex);
-                if (StringUtils.isEmpty(commentString)) {
-                    continue;
-                }
-                translatedIssues.getIssueComments().put(issue, new ArrayList<>(commentColumnIndices.size()));
-                // comment example
-                // 07/Sep/18 1:14 PM;Johnny;Current imp don't throw NPE for unregistered views
-                String[] values = commentString.split(";");
-                if (values.length == 3) {
-                    try {
+                issue.setCustomFields(issueCustomFields.toArray(new IssueCustomField[]{}));
+                for (Integer commentColumnIndex : commentColumnIndices) {
+                    String commentString = row.get(commentColumnIndex);
+                    if (StringUtils.isEmpty(commentString)) {
+                        continue;
+                    }
+                    translatedIssues.getIssueComments().put(issue, new ArrayList<>(commentColumnIndices.size()));
+                    String[] values = commentString.split(";");
+                    if (values.length == 3) {
                         IssueComment issueComment = new IssueComment();
                         if (!StringUtils.isEmpty(values[0])) {
                             issueComment.setCreated(translateDateString(values[0]));
                         }
                         issueComment.setAuthor(usersMapping.getMapping().get(values[1]));
                         issueComment.setText(values[2]);
-                        issueComment.setIssue(issue);
                         translatedIssues.getIssueComments().get(issue).add(issueComment);
-                    } catch (MappingException e) {
-                        return AsyncResult.forExecutionException(e);
+                    } else if (values.length == 1) {
+                        IssueComment issueComment = new IssueComment();
+                        issueComment.setText(values[0]);
+                        translatedIssues.getIssueComments().get(issue).add(issueComment);
+                    } else {
+                        return AsyncResult.forExecutionException(
+                                new InvalidFormatException("Comment column value unexpected format"));
                     }
-                } else if (values.length == 1) {
-                    IssueComment issueComment = new IssueComment();
-                    issueComment.setText(values[0]);
-                    issueComment.setIssue(issue);
-                    translatedIssues.getIssueComments().get(issue).add(issueComment);
-                } else {
-                    return AsyncResult.forExecutionException(
-                            new InvalidFormatException("Comment column value unexpected format"));
                 }
+                translatedIssues.getIssues().add(issue);
             }
-
-            translatedIssues.getIssues().add(issue);
+        } catch (MappingException e) {
+            return AsyncResult.forExecutionException(e);
         }
         return AsyncResult.forValue(translatedIssues);
     }

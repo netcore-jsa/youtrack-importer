@@ -1,6 +1,6 @@
 package software.netcore.youtrack.buisness.client.entity.user;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.Getter;
@@ -13,6 +13,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
+@JsonInclude(value = JsonInclude.Include.NON_NULL)
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "$type", visible = true)
 @JsonSubTypes({
         @JsonSubTypes.Type(value = Me.class, name = "Me"),
@@ -20,8 +21,7 @@ import lombok.Setter;
 })
 public class User {
 
-    @JsonProperty("$type")
-    private String type;
+    private String id;
 
     private String login;
 
@@ -44,7 +44,8 @@ public class User {
     @Override
     public String toString() {
         return "User{" +
-                "login='" + login + '\'' +
+                "id'" + id + '\'' +
+                ", login='" + login + '\'' +
                 ", fullName='" + fullName + '\'' +
                 ", email='" + email + '\'' +
                 ", jabberAccountName='" + jabberAccountName + '\'' +

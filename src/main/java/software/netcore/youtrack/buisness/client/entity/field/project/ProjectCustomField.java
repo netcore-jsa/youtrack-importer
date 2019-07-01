@@ -1,12 +1,12 @@
 package software.netcore.youtrack.buisness.client.entity.field.project;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.Getter;
 import lombok.Setter;
 import software.netcore.youtrack.buisness.client.entity.Project;
-import software.netcore.youtrack.buisness.client.entity.bundle.element.*;
 import software.netcore.youtrack.buisness.client.entity.field.CustomField;
 import software.netcore.youtrack.buisness.client.entity.field.project.bundle.UserProjectCustomField;
 import software.netcore.youtrack.buisness.client.entity.field.project.bundle.base.*;
@@ -17,7 +17,8 @@ import software.netcore.youtrack.buisness.client.entity.field.project.simple.Tex
  */
 @Getter
 @Setter
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "$type")
+@JsonInclude(value = JsonInclude.Include.NON_NULL)
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "$type", visible = true)
 @JsonSubTypes({
         @JsonSubTypes.Type(value = BuildProjectCustomField.class, name = "BuildProjectCustomField"),
         @JsonSubTypes.Type(value = EnumProjectCustomField.class, name = "EnumProjectCustomField"),
@@ -30,9 +31,6 @@ import software.netcore.youtrack.buisness.client.entity.field.project.simple.Tex
         @JsonSubTypes.Type(value = PeriodProjectCustomField.class, name = "PeriodProjectCustomField"),
 })
 public abstract class ProjectCustomField {
-
-    @JsonProperty("$type")
-    private String type;
 
     private String id;
 
@@ -54,8 +52,7 @@ public abstract class ProjectCustomField {
     @Override
     public String toString() {
         return "ProjectCustomField{" +
-                "type='" + type + '\'' +
-                ", id='" + id + '\'' +
+                "id='" + id + '\'' +
                 ", customField=" + customField +
                 ", project=" + project +
                 ", emptyFieldText='" + emptyFieldText + '\'' +

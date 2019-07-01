@@ -1,10 +1,10 @@
 package software.netcore.youtrack.buisness.client.entity;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import software.netcore.youtrack.buisness.client.entity.field.issue.IssueCustomField;
-import software.netcore.youtrack.buisness.client.entity.field.project.ProjectCustomField;
 import software.netcore.youtrack.buisness.client.entity.user.User;
 
 import java.util.Arrays;
@@ -15,6 +15,7 @@ import java.util.Arrays;
 @Getter
 @Setter
 @NoArgsConstructor
+@JsonInclude(value = JsonInclude.Include.NON_NULL)
 public class Issue {
 
     private String idReadable;

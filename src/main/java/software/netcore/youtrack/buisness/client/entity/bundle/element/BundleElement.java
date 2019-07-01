@@ -1,6 +1,6 @@
 package software.netcore.youtrack.buisness.client.entity.bundle.element;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.Getter;
@@ -13,7 +13,8 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "$type")
+@JsonInclude(value = JsonInclude.Include.NON_NULL)
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "$type", visible = true)
 @JsonSubTypes({
         @JsonSubTypes.Type(value = EnumBundleElement.class, name = "EnumBundleElement"),
         @JsonSubTypes.Type(value = OwnedBundleElement.class, name = "OwnedBundleElement"),
@@ -27,15 +28,11 @@ public abstract class BundleElement {
 
     private String name;
 
-    @JsonProperty("$type")
-    private String type;
-
     @Override
     public String toString() {
         return "BundleElement{" +
                 "id='" + id + '\'' +
                 ", name='" + name + '\'' +
-                ", type='" + type + '\'' +
                 '}';
     }
 

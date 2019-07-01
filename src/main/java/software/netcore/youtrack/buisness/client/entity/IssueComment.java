@@ -1,5 +1,6 @@
 package software.netcore.youtrack.buisness.client.entity;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -11,6 +12,7 @@ import software.netcore.youtrack.buisness.client.entity.user.User;
 @Getter
 @Setter
 @NoArgsConstructor
+@JsonInclude(value = JsonInclude.Include.NON_NULL)
 public class IssueComment {
 
     private String text;
