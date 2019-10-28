@@ -12,8 +12,10 @@ import java.util.*;
 @Getter
 public class TranslatedIssues {
 
-    private final Collection<Issue> issues = new ArrayList<>();
+    private final List<Issue> issues = new ArrayList<>();
 
     private final Map<Issue, List<IssueComment>> issueComments = new HashMap<>();
+
+    private final Set<Issue> dummyIssues = new HashSet<>();
 
 }

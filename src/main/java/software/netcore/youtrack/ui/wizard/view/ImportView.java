@@ -207,8 +207,10 @@ public class ImportView extends AbstractFlowStepView<YouTrackImporterStorage, Tr
             issueLayout.add(row("Issue ID", issue.getIdReadable()));
             issueLayout.add(row("Summary", issue.getSummary()));
             issueLayout.add(row("Description", issue.getDescription()));
-            issueLayout.add(row("Reporter", issue.getReporter().getLogin()));
-            issueLayout.add(row("Created at", new Date(issue.getCreated() * 1000).toString()));
+            issueLayout.add(row("Reporter", issue.getReporter() == null ? "N/a" :
+                    issue.getReporter().getLogin()));
+            issueLayout.add(row("Created at", issue.getCreated() == null ? "N/a" :
+                    new Date(issue.getCreated() * 1000).toString()));
             if (Objects.nonNull(issue.getCustomFields())) {
                 for (IssueCustomField customField : issue.getCustomFields()) {
                     if (customField instanceof BaseIssueCustomField) {

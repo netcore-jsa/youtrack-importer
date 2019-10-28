@@ -76,6 +76,7 @@ public class YouTrackService {
             for (Issue issue : translatedIssues.getIssues()) {
                 Issue createdIssue = restClient.createIssue(connectionConfig.getApiEndpoint(),
                         connectionConfig.getServiceToken(), issue);
+
                 List<IssueComment> comments = translatedIssues.getIssueComments().get(issue);
                 if (Objects.nonNull(comments)) {
                     for (IssueComment comment : comments) {
@@ -118,7 +119,8 @@ public class YouTrackService {
         List<Integer> commentColumnIndices = new ArrayList<>();
         for (int i = 0; i < csvReadResult.getColumns().size(); i++) {
             indices.put(csvReadResult.getColumns().get(i), i);
-            if (Objects.equals(mandatoryFieldsMapping.getComments(), csvReadResult.getColumns().get(i))) {
+            if (mandatoryFieldsMapping.getComments() != null &&
+                    Objects.equals(mandatoryFieldsMapping.getComments(), csvReadResult.getColumns().get(i))) {
                 commentColumnIndices.add(i);
             }
         }
@@ -129,7 +131,7 @@ public class YouTrackService {
                 issue.setIdReadable(row.get(indices.get(mandatoryFieldsMapping.getIssueId())));
                 issue.setSummary(row.get(indices.get(mandatoryFieldsMapping.getSummary())));
                 issue.setDescription(row.get(indices.get(mandatoryFieldsMapping.getDescription())));
-                issue.setCreated(translateDateString(row.get(indices.get(mandatoryFieldsMapping.getCreatedAt()))));
+//                issue.setCreated(translateDateString(row.get(indices.get(mandatoryFieldsMapping.getCreatedAt()))));
                 String csvReporter = row.get(indices.get(mandatoryFieldsMapping.getReporter()));
                 User reporter = usersMapping.getMapping().get(csvReporter);
                 if (Objects.isNull(reporter)) {
@@ -256,7 +258,43 @@ public class YouTrackService {
         } catch (MappingException e) {
             return AsyncResult.forExecutionException(e);
         }
+
+        String issueNumberPrefix = getIssueNumberPrefix(translatedIssues.getIssues().iterator().next());
+        int highestIssueNumber = 0;
+        Set<Integer> issueNumbers = new HashSet<>();
+        for (Issue issue : translatedIssues.getIssues()) {
+            int number = getIssueNumber(issue);
+            issueNumbers.add(number);
+            if (number > highestIssueNumber) {
+                highestIssueNumber = number;
+            }
+        }
+        for (int i = 1; i < highestIssueNumber; i++) {
+            if (!issueNumbers.contains(i)) {
+                Issue issue = new Issue();
+                issue.setIdReadable(issueNumberPrefix + "-" + i);
+                issue.setSummary("Dummy issue");
+                issue.setDescription("Dummy description");
+                issue.setProject(project);
+                translatedIssues.getIssues().add(issue);
+                translatedIssues.getDummyIssues().add(issue);
+            }
+        }
+
+        translatedIssues.getIssues().sort((o1, o2) -> {
+            int n1 = getIssueNumber(o1);
+            int n2 = getIssueNumber(o2);
+            return Integer.compare(n1, n2);
+        });
         return AsyncResult.forValue(translatedIssues);
+    }
+
+    private int getIssueNumber(Issue issue) {
+        return Integer.parseInt(issue.getIdReadable().split("-")[1]);
+    }
+
+    private String getIssueNumberPrefix(Issue issue) {
+        return issue.getIdReadable().split("-")[0];
     }
 
     private Long translateDateString(String dateString) throws MappingException {

@@ -34,7 +34,7 @@ public class YouTrackRestClient {
     private final static String PROJECT_CUSTOM_FIELDS_PATH = "/admin/projects/%s/customFields?fields=id,name," +
             "canBeEmpty,emptyFieldText,field(id,name,type),bundle(id,name,type,values(id,name,description,type))";
     private static final String ISSUES_PATH = "/issues?fields=idReadable";
-    private static final String ISSUE_COMMENTS_PATH = "/issues";
+    private static final String ISSUE_COMMENTS_PATH = "/issues/%s/comments";
 
     private final OkHttpClient client;
     private final ObjectMapper objectMapper;
@@ -154,7 +154,8 @@ public class YouTrackRestClient {
                         objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(issueComment));
             }
             String json = objectMapper.writeValueAsString(issueComment);
-            String response = doPost(json, apiEndpoint + ISSUE_COMMENTS_PATH, authToken);
+            String response = doPost(json, apiEndpoint + String.format(ISSUE_COMMENTS_PATH,
+                    issueComment.getIssue().getIdReadable()), authToken);
             IssueComment createdIssueComment = objectMapper.readValue(response, IssueComment.class);
             if (log.isDebugEnabled()) {
                 log.debug("Response body = '{}'",
@@ -171,8 +172,8 @@ public class YouTrackRestClient {
         }
     }
 
-    private String doGet(String url, String authToken) throws IOException, UnauthorizedException,
-            BadRequestException, InvalidHostnameException {
+    private String doGet(String url, String authToken)
+            throws IOException, UnauthorizedException, BadRequestException, InvalidHostnameException {
         Request request = new Request.Builder()
                 .get()
                 .url(url)
@@ -192,12 +193,13 @@ public class YouTrackRestClient {
                 .headers(buildHeaders(authToken))
                 .build();
         Response response = client.newCall(request).execute();
+        log.info("Response status code = '{}'", response.code());
         validateResponse(response);
         return response.body().string();
     }
 
-    private void validateResponse(Response response) throws InvalidHostnameException, UnauthorizedException,
-            BadRequestException, IOException {
+    private void validateResponse(Response response)
+            throws InvalidHostnameException, UnauthorizedException, BadRequestException, IOException {
         switch (response.code()) {
             case 401:
                 log.warn("YouTrack request failed. Unauthorized request");

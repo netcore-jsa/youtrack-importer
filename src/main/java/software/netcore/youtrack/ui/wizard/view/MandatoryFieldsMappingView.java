@@ -80,7 +80,6 @@ public class MandatoryFieldsMappingView extends AbstractFlowStepView<YouTrackImp
                 .asRequired("Description mapping is required")
                 .bind(MandatoryFieldsMapping::getDescription, MandatoryFieldsMapping::setDescription);
         binder.forField(comments)
-                .asRequired("Comment mapping is required")
                 .bind(MandatoryFieldsMapping::getComments, MandatoryFieldsMapping::setComments);
         binder.forField(reporter)
                 .asRequired("Reporter mapping is required")

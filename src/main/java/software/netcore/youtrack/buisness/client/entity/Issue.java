@@ -1,6 +1,7 @@
 package software.netcore.youtrack.buisness.client.entity;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -15,6 +16,7 @@ import java.util.Arrays;
 @Getter
 @Setter
 @NoArgsConstructor
+@EqualsAndHashCode(of = "idReadable")
 @JsonInclude(value = JsonInclude.Include.NON_NULL)
 public class Issue {
 
